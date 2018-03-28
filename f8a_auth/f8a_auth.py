@@ -14,6 +14,7 @@ from .exceptions import HTTPError
 
 jwt.register_algorithm('RS256', RSAAlgorithm(RSAAlgorithm.SHA256))
 
+
 def fetch_public_key(app):
     """Get public key and caches it on the app object for future use."""
     # TODO: even though saving the key on the app object is not very nice,
@@ -40,8 +41,10 @@ def fetch_public_key(app):
 
     return app.public_key
 
+
 def decode_token():
     """Decode the authorization token read from the request header."""
+
     token = request.headers.get('Authorization')
     if token is None:
         return {}
@@ -88,7 +91,8 @@ def login_required(view):
                 logger.exception('Provide an Authorization token with the API request')
                 raise HTTPError(401, 'Authentication failed - token missing')
 
-            logger.info('Successfuly authenticated user {e} using JWT'.format(e=decoded.get('email')))
+            logger.info('Successfuly authenticated user {e} using JWT'.format(
+                e=decoded.get('email')))
         except jwt.ExpiredSignatureError as exc:
             logger.exception('Expired JWT token')
             decoded = {'email': 'unauthenticated@jwt.failed'}
@@ -107,6 +111,7 @@ def login_required(view):
             raise HTTPError(401, 'Authentication required')
         return view(*args, **kwargs)
     return wrapper
+
 
 class User:
     """Class that represents User entity."""

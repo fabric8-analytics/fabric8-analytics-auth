@@ -3,6 +3,7 @@
 
 class HTTPError(Exception):
     """Representation of HTTP error.
+
     This is a class that represents an HTTP error that occured somewhere.
     Each blueprint should have a function called `coreapi_http_error_handler`,
     which will accept instance of this class and return a response to its
