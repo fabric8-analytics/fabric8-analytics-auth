@@ -1,4 +1,4 @@
-"""Auhentication helpers"""
+"""Auhentication helpers."""
 
 import datetime
 import enum
@@ -10,7 +10,7 @@ from requests import get, post, exceptions
 from itsdangerous import BadSignature, SignatureExpired, TimedJSONWebSignatureSerializer
 import jwt
 from jwt.contrib.algorithms.pycrypto import RSAAlgorithm
-from .exceptions import HTTPError
+from errors import HTTPError
 
 jwt.register_algorithm('RS256', RSAAlgorithm(RSAAlgorithm.SHA256))
 
@@ -44,7 +44,6 @@ def fetch_public_key(app):
 
 def decode_token():
     """Decode the authorization token read from the request header."""
-
     token = request.headers.get('Authorization')
     if token is None:
         return {}
