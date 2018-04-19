@@ -2,11 +2,6 @@
 
 set -ex
 
-prep() {
-    yum -y update
-    yum -y install epel-release
-    yum -y install python34 python34-virtualenv which libarchive
-}
+. cico_setup.sh
 
-prep
 ./runtests.sh
