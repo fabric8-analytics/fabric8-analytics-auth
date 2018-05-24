@@ -1,3 +1,5 @@
+[![Build Status](https://ci.centos.org/job/devtools-fabric8-analytics-auth-fabric8-analytics/badge/icon)](https://ci.centos.org/job/devtools-fabric8-analytics-auth-fabric8-analytics/)
+
 # fabric8-analytics-auth
 Authentication utilities for f8a flask applications
 
