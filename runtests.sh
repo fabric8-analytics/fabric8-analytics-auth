@@ -1,16 +1,32 @@
 #! /bin/bash
 
+export TERM=xterm
+TERM=${TERM:-xterm}
+
+# set up terminal colors
+NORMAL=$(tput sgr0)
+RED=$(tput bold && tput setaf 1)
+GREEN=$(tput bold && tput setaf 2)
+YELLOW=$(tput bold && tput setaf 3)
+
 export PYTHONPATH=`pwd`/f8a_auth/
 
-echo "Create Virtualenv for Python deps ..."
+printf "${NORMAL}Create Virtualenv for Python deps ..."
+
 function prepare_venv() {
     VIRTUALENV=`which virtualenv`
-    if [ $? -eq 1 ]; then
+    if [ $? -eq 1 ]
+    then
         # python34 which is in CentOS does not have virtualenv binary
         VIRTUALENV=`which virtualenv-3`
     fi
 
     ${VIRTUALENV} -p python3 venv && source venv/bin/activate && python3 `which pip3` install -r requirements.txt && python3 `which pip3` install -r test_requirements.txt
+    if [ $? -ne 0 ]
+    then
+        printf "${RED}Python virtual environment can't be initialized${NORMAL}"
+        exit 1
+    fi
 }
 
 [ "$NOVENV" == "1" ] || prepare_venv || exit 1
