@@ -42,9 +42,8 @@ def fetch_public_key(app):
     return app.public_key
 
 
-def decode_token():
-    """Decode the authorization token read from the request header."""
-    token = request.headers.get('Authorization')
+def decode_token(token):
+    """Decode the authorization token passed in parameter."""
     if token is None:
         return {}
 
@@ -73,6 +72,11 @@ def decode_token():
     return decoded_token
 
 
+def decode_token_from_auth_header():
+    """Decode the authorization token read from the request header."""
+    return request.headers.get('Authorization')
+
+
 def login_required(view):
     """Check if the login is required and if the user can be authorized."""
     def wrapper(*args, **kwargs):
@@ -85,7 +89,7 @@ def login_required(view):
         user = None
 
         try:
-            decoded = decode_token()
+            decoded = decode_token_from_auth_header()
             if not decoded:
                 logger.exception('Provide an Authorization token with the API request')
                 raise HTTPError(401, 'Authentication failed - token missing')
