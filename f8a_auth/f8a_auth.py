@@ -42,6 +42,11 @@ def fetch_public_key(app):
     return app.public_key
 
 
+def get_audiences():
+    """Retrieve all JWT audiences."""
+    return current_app.config.get('BAYESIAN_JWT_AUDIENCE').split(',')
+
+
 def decode_token(token):
     """Decode the authorization token passed in parameter."""
     if token is None:
@@ -51,7 +56,9 @@ def decode_token(token):
         _, token = token.split(' ', 1)
 
     pub_key = fetch_public_key(current_app)
-    audiences = current_app.config.get('BAYESIAN_JWT_AUDIENCE').split(',')
+    audiences = get_audiences()
+
+    decoded_token = None
 
     for aud in audiences:
         try:
