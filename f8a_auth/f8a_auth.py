@@ -1,4 +1,4 @@
-"""Auhentication helpers."""
+"""Authentication helpers."""
 
 import datetime
 import enum
@@ -79,8 +79,8 @@ def decode_token(token):
     return decoded_token
 
 
-def decode_token_from_auth_header():
-    """Decode the authorization token read from the request header."""
+def get_token_from_auth_header():
+    """Get the authorization token read from the request header."""
     return request.headers.get('Authorization')
 
 
@@ -96,7 +96,8 @@ def login_required(view):
         user = None
 
         try:
-            decoded = decode_token_from_auth_header()
+            token = get_token_from_auth_header()
+            decoded = decode_token(token)
             if not decoded:
                 logger.exception('Provide an Authorization token with the API request')
                 raise HTTPError(401, 'Authentication failed - token missing')
