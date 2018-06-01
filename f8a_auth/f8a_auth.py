@@ -64,16 +64,18 @@ def decode_token(token):
         try:
             decoded_token = jwt.decode(token, pub_key, audience=aud)
         except jwt.InvalidTokenError:
+            decoded_token = None
             current_app.logger.error(
                 'Auth Token could not be decoded for audience {}'.format(aud))
-            decoded_token = None
 
         if decoded_token is not None:
             break
 
     if decoded_token is None:
         raise jwt.InvalidTokenError('Auth token audience cannot be verified.')
-    if decoded_token.email_verified in ('0', 'False', 'false'):
+    if "email_verified" not in decoded_token:
+        raise jwt.InvalidIssuerError('Can not retrieve the email_verified property from the token')
+    if decoded_token["email_verified"] in ('0', 'False', 'false'):
         raise jwt.InvalidIssuerError('Email of the user has not been validated')
 
     return decoded_token
