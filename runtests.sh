@@ -9,22 +9,23 @@ RED=$(tput bold && tput setaf 1)
 GREEN=$(tput bold && tput setaf 2)
 YELLOW=$(tput bold && tput setaf 3)
 
-export PYTHONPATH=`pwd`/f8a_auth/
+PYTHONPATH=$(pwd)/f8a_auth/
+export PYTHONPATH
 
-printf "${NORMAL}Create Virtualenv for Python deps ..."
+printf "%sCreate Virtualenv for Python deps ..." "${NORMAL}"
 
 function prepare_venv() {
-    VIRTUALENV=`which virtualenv`
+    VIRTUALENV=$(which virtualenv)
     if [ $? -eq 1 ]
     then
         # python34 which is in CentOS does not have virtualenv binary
-        VIRTUALENV=`which virtualenv-3`
+        VIRTUALENV=$(which virtualenv-3)
     fi
 
-    ${VIRTUALENV} -p python3 venv && source venv/bin/activate && python3 `which pip3` install -r requirements.txt && python3 `which pip3` install -r test_requirements.txt
+    ${VIRTUALENV} -p python3 venv && source venv/bin/activate && python3 "$(which pip3)" install -r requirements.txt && python3 "$(which pip3)" install -r test_requirements.txt
     if [ $? -ne 0 ]
     then
-        printf "${RED}Python virtual environment can't be initialized${NORMAL}"
+        printf "%sPython virtual environment can't be initialized%s" "${RED}" "${NORMAL}"
         exit 1
     fi
 }
@@ -44,5 +45,6 @@ radon mi -s -i venv .
 echo "*****************************************"
 echo "*** Unit tests ***"
 echo "*****************************************"
-cd tests
-PYTHONDONTWRITEBYTECODE=1 python3 `which pytest` --cov=../f8a_auth/ --cov-report term-missing -vv .
+cd tests || exit
+PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../f8a_auth/ --cov-report term-missing -vv -s .
+printf "%stests passed%s\n\n" "${GREEN}" "${NORMAL}"
