@@ -47,4 +47,4 @@ echo "*** Unit tests ***"
 echo "*****************************************"
 cd tests || exit
 PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../f8a_auth/ --cov-report term-missing -vv -s .
-printf "%stests passed%s" "${GREEN}" "${NORMAL}"
+printf "%stests passed%s\n\n" "${GREEN}" "${NORMAL}"
