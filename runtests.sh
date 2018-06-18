@@ -28,6 +28,7 @@ function prepare_venv() {
         printf "%sPython virtual environment can't be initialized%s" "${RED}" "${NORMAL}"
         exit 1
     fi
+    printf "%sPython virtual environment initialized%s\n" "${YELLOW}" "${NORMAL}"
 }
 
 [ "$NOVENV" == "1" ] || prepare_venv || exit 1
