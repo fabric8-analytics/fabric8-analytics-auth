@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# test coverage threshold
+COVERAGE_THRESHOLD=50
+
 export TERM=xterm
 TERM=${TERM:-xterm}
 
@@ -47,5 +50,5 @@ echo "*****************************************"
 echo "*** Unit tests ***"
 echo "*****************************************"
 cd tests || exit
-PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../f8a_auth/ --cov-report term-missing -vv -s .
+PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../f8a_auth/ --cov-report term-missing --cov-fail-under=$COVERAGE_THRESHOLD -vv -s .
 printf "%stests passed%s\n\n" "${GREEN}" "${NORMAL}"
