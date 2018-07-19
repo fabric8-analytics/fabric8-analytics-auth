@@ -6,7 +6,6 @@ import jwt
 import requests
 from flask import current_app, request
 from jwt.contrib.algorithms.pycrypto import RSAAlgorithm
-from requests import get, exceptions
 
 from fabric8a_auth.errors import HTTPError
 

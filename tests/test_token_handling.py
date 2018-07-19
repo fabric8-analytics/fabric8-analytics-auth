@@ -66,47 +66,47 @@ def mocked_get_audiences_3():
     return ["foo:bar", ]
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_1)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_1, create=True)
 def test_decode_token_invalid_input_1(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
     assert decode_user_token(None) == {}
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_1)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_1, create=True)
 def test_decode_token_invalid_input_2(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
     with pytest.raises(Exception):
         assert decode_user_token("Foobar") is None
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_1)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_1, create=True)
 def test_decode_token_invalid_input_3(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
     with pytest.raises(Exception):
         assert decode_user_token("Bearer ") is None
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_2)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_2, create=True)
 def test_decode_token_invalid_input_4(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
     with pytest.raises(Exception):
         assert decode_user_token("Bearer ") is None
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_2)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_2)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_2, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_2, create=True)
 def test_decode_token_invalid_input_5(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
     with pytest.raises(Exception):
         assert decode_user_token("Bearer something") is None
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_3)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_3)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_3, create=True)
 def test_decode_token_invalid_input_6(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
     payload = {
@@ -118,8 +118,8 @@ def test_decode_token_invalid_input_6(mocked_fetch_public_key, mocked_get_audien
         assert decode_user_token(token) is not None
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_3)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_3)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_3, create=True)
 def test_decode_token_invalid_input_7(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
     payload = {
@@ -132,8 +132,8 @@ def test_decode_token_invalid_input_7(mocked_fetch_public_key, mocked_get_audien
         assert decode_user_token(token) is not None
 
 
-@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_3)
-@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_3)
+@patch("fabric8a_auth.get_audiences", side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.fetch_public_key", side_effect=mocked_fetch_public_key_3, create=True)
 def test_decode_token_valid_input(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
     payload = {
