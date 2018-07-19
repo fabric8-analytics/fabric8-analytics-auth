@@ -86,7 +86,7 @@ def decode_service_token(token):
     if token.startswith('Bearer '):
         _, token = token.split(' ', 1)
 
-    pub_keys = fetch_service_public_keys(current_app)
+    pub_keys = fetch_public_keys(current_app)
     decoded_token = None
 
     # Since we have multiple public keys, we need to verify against every public key.
@@ -210,10 +210,10 @@ def fetch_public_key(app):
     return app.public_key
 
 
-def fetch_service_public_keys(app):
+def fetch_public_keys(app):
     """Get public keys for OSIO service account. Currently, there are three public keys."""
     if not getattr(app, "service_public_keys", []):
-        auth_url = os.getenv('BAYESIAN_AUTH_PUBLIC_KEYS_URL', '')
+        auth_url = os.getenv('FABRIC8_AUTH_URL', '')
         if auth_url:
             try:
                 auth_url = auth_url.strip('/') + '/api/token/keys?format=pem'

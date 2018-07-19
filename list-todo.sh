@@ -1,6 +1,6 @@
 #!/bin/bash
 
-directories="f8a_auth tests"
+directories="fabric8a_auth tests"
 
 # checks for the whole directories
 for directory in $directories

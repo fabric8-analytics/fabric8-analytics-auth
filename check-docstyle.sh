@@ -1,6 +1,6 @@
 #!/bin/bash
 
-directories="f8a_auth tests"
+directories="fabric8a_auth tests"
 separate_files="setup.py"
 pass=0
 fail=0
