@@ -209,3 +209,6 @@ def fetch_public_keys(app):
 
 class User:
     """Class that represents User entity."""
+
+    def __init__(self, email):
+        self.email = email
