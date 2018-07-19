@@ -1,43 +1,16 @@
 """Auhentication helpers"""
-from functools import wraps
-from os import getenv, os
+import os
 
+from functools import wraps
 import jwt
 import requests
 from flask import current_app, request
 from jwt.contrib.algorithms.pycrypto import RSAAlgorithm
 from requests import get, exceptions
 
-from .errors import HTTPError
+from fabric8a_auth.errors import HTTPError
 
 jwt.register_algorithm('RS256', RSAAlgorithm(RSAAlgorithm.SHA256))
-
-
-def fetch_public_key(app):
-    """Get public key and caches it on the app object for future use."""
-    # TODO: even though saving the key on the app object is not very nice,
-    #  it's actually safe - the worst thing that can happen is that we will
-    #  fetch and save the same value on the app object multiple times
-    if not getattr(app, 'public_key', ''):
-        keycloak_url = app.config.get('BAYESIAN_FETCH_PUBLIC_KEY', '')
-        if keycloak_url:
-            pub_key_url = keycloak_url.strip('/') + '/auth/realms/fabric8/'
-            try:
-                result = get(pub_key_url, timeout=0.5)
-                app.logger.info('Fetching public key from %s, status %d, result: %s',
-                                pub_key_url, result.status_code, result.text)
-            except exceptions.Timeout:
-                app.logger.error('Timeout fetching public key from %s', pub_key_url)
-                return ''
-            if result.status_code != 200:
-                return ''
-            pkey = result.json().get('public_key', '')
-            app.public_key = \
-                '-----BEGIN PUBLIC KEY-----\n{pkey}\n-----END PUBLIC KEY-----'.format(pkey=pkey)
-        else:
-            app.public_key = app.config.get('BAYESIAN_PUBLIC_KEY')
-
-    return app.public_key
 
 
 def get_audiences():
@@ -118,7 +91,7 @@ def get_token_from_auth_header():
 
 def get_audiences():
     """Retrieve all JWT audiences."""
-    return getenv('BAYESIAN_JWT_AUDIENCE').split(',')
+    return os.getenv('BAYESIAN_JWT_AUDIENCE').split(',')
 
 
 def login_required(view):
@@ -129,7 +102,7 @@ def login_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
         # Disable authentication for local setup
-        if getenv('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+        if os.getenv('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
             return view(*args, **kwargs)
 
         lgr = current_app.logger
@@ -159,7 +132,7 @@ def service_token_required(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
         # Disable authentication for local setup
-        if getenv('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+        if os.getenv('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
             return view(*args, **kwargs)
 
         lgr = current_app.logger
@@ -189,7 +162,7 @@ def fetch_public_key(app):
     #  it's actually safe - the worst thing that can happen is that we will
     #  fetch and save the same value on the app object multiple times
     if not getattr(app, 'public_key', ''):
-        keycloak_url = os.getenv('BAYESIAN_FETCH_PUBLIC_KEY', '')
+        keycloak_url = os.os.getenv('BAYESIAN_FETCH_PUBLIC_KEY', '')
         if keycloak_url:
             pub_key_url = keycloak_url.strip('/') + '/auth/realms/fabric8/'
             try:
@@ -213,7 +186,7 @@ def fetch_public_key(app):
 def fetch_public_keys(app):
     """Get public keys for OSIO service account. Currently, there are three public keys."""
     if not getattr(app, "service_public_keys", []):
-        auth_url = os.getenv('FABRIC8_AUTH_URL', '')
+        auth_url = os.os.getenv('FABRIC8_AUTH_URL', '')
         if auth_url:
             try:
                 auth_url = auth_url.strip('/') + '/api/token/keys?format=pem'
@@ -237,4 +210,3 @@ def fetch_public_keys(app):
 
 class User:
     """Class that represents User entity."""
-

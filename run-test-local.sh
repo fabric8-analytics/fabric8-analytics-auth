@@ -1,6 +1,6 @@
 #! /bin/bash
 
-PYTHONPATH=$(pwd)/f8a_auth/
+PYTHONPATH=$(pwd)/fabric8a_auth/
 export PYTHONPATH
 
 function prepare_venv() {
@@ -10,4 +10,4 @@ function prepare_venv() {
 [ "$NOVENV" == "1" ] || prepare_venv || exit 1
 
 cd tests || exit
-PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../f8a_auth/ --cov-report term-missing -vv -s .
+PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../fabric8a_auth/ --cov-report term-missing -vv -s .

@@ -12,7 +12,7 @@ RED=$(tput bold && tput setaf 1)
 GREEN=$(tput bold && tput setaf 2)
 YELLOW=$(tput bold && tput setaf 3)
 
-PYTHONPATH=$(pwd)/f8a_auth/
+PYTHONPATH=$(pwd)/fabric8a_auth/
 export PYTHONPATH
 
 printf "%sCreate Virtualenv for Python deps ..." "${NORMAL}"
@@ -50,5 +50,5 @@ echo "*****************************************"
 echo "*** Unit tests ***"
 echo "*****************************************"
 cd tests || exit
-PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../f8a_auth/ --cov-report term-missing --cov-fail-under=$COVERAGE_THRESHOLD -vv -s .
+PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../fabric8a_auth/ --cov-report term-missing --cov-fail-under=$COVERAGE_THRESHOLD -vv -s .
 printf "%stests passed%s\n\n" "${GREEN}" "${NORMAL}"

@@ -2,27 +2,27 @@
 
 import unittest
 import pytest
-from fabric8a_auth.errors import HTTPError
+import fabric8a_auth.errors
 
 
 def test_http_error_attributes():
     """Test the basic behaviour of HTTPError class."""
-    e = HTTPError(404, "Not found")
+    e = fabric8a_auth.errors.HTTPError(404, "Not found")
     assert e.status_code == 404
     assert e.error == "Not found"
 
 
 def test_http_error_raise():
     """Test the basic behaviour of HTTPError class."""
-    with pytest.raises(HTTPError) as e:
-        raise HTTPError(404, "Not found")
+    with pytest.raises(fabric8a_auth.errors.HTTPError) as e:
+        raise fabric8a_auth.errors.HTTPError(404, "Not found")
 
 
 def test_http_error_exception_handling():
     """Test the basic behaviour of HTTPError class."""
     try:
-        raise HTTPError(404, "Not found")
-    except HTTPError as e:
+        raise fabric8a_auth.errors.HTTPError(404, "Not found")
+    except fabric8a_auth.errors.HTTPError as e:
         print(e)
 
 
