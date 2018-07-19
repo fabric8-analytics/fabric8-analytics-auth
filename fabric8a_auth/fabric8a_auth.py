@@ -14,7 +14,7 @@ jwt.register_algorithm('RS256', RSAAlgorithm(RSAAlgorithm.SHA256))
 
 def get_audiences():
     """Retrieve all JWT audiences."""
-    return current_app.config.get('BAYESIAN_JWT_AUDIENCE').split(',')
+    return current_app.config.get('FABRIC8_ANALYTICS_JWT_AUDIENCE').split(',')
 
 
 def decode_user_token(token):
@@ -88,7 +88,7 @@ def get_token_from_auth_header():
 
 def get_audiences():
     """Retrieve all JWT audiences."""
-    return os.getenv('BAYESIAN_JWT_AUDIENCE').split(',')
+    return os.getenv('FABRIC8_ANALYTICS_JWT_AUDIENCE').split(',')
 
 
 def login_required(view):
@@ -159,7 +159,7 @@ def fetch_public_key(app):
     #  it's actually safe - the worst thing that can happen is that we will
     #  fetch and save the same value on the app object multiple times
     if not getattr(app, 'public_key', ''):
-        keycloak_url = os.os.getenv('BAYESIAN_FETCH_PUBLIC_KEY', '')
+        keycloak_url = os.os.getenv('FABRIC8_ANALYTICS_FETCH_PUBLIC_KEY', '')
         if keycloak_url:
             pub_key_url = keycloak_url.strip('/') + '/auth/realms/fabric8/'
             try:
