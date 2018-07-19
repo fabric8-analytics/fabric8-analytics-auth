@@ -66,8 +66,6 @@ def decode_service_token(token):
     for pub_key in pub_keys:
         try:
             pub_key = pub_key.get("key", "")
-            pub_key = '-----BEGIN PUBLIC KEY-----\n{pkey}\n-----END PUBLIC KEY-----'\
-                .format(pkey=pub_key)
             decoded_token = jwt.decode(token, pub_key, algorithms=['RS256'])
         except jwt.InvalidTokenError:
             current_app.logger.error("Auth token couldn't be decoded for public key: {}"
@@ -175,7 +173,8 @@ def fetch_public_key(app):
                 return ''
             pkey = result.json().get('public_key', '')
             app.public_key = \
-                '-----BEGIN PUBLIC KEY-----\n{pkey}\n-----END PUBLIC KEY-----'.format(pkey=pkey)
+                '-----BEGIN PUBLIC KEY-----\n{pkey}\n' \
+                '-----END PUBLIC KEY-----'.format(pkey=pkey)
         else:
             app.public_key = None
 
@@ -199,7 +198,11 @@ def fetch_public_keys(app):
                 return ''
 
             keys = result.json().get('keys', [])
-            app.service_public_keys = keys
+
+            for i, key in keys:
+                keys[i] =\
+                    '-----BEGIN PUBLIC KEY-----\n{pkey}\n' \
+                    '-----END PUBLIC KEY-----'.format(pkey=key)
 
         else:
             app.service_public_keys = None
