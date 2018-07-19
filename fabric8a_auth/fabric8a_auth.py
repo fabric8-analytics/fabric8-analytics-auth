@@ -61,16 +61,17 @@ def decode_service_token(token):
     pub_keys = fetch_public_keys(current_app)
     decoded_token = None
 
-    # Since we have multiple public keys, we need to verify against every public key.
-    # Token can be decoded by any one of the available public keys.
+    # Every key and every token has kid value.
+    # Which is a hash that can identify the pair.
     for pub_key in pub_keys:
-        try:
-            pub_key = pub_key.get("key", "")
-            decoded_token = jwt.decode(token, pub_key, algorithms=['RS256'])
-        except jwt.InvalidTokenError:
-            current_app.logger.error("Auth token couldn't be decoded for public key: {}"
+        if pub_key.kid == token.kid:
+            try:
+                pub_key = pub_key.get("key", "")
+                decoded_token = jwt.decode(token, pub_key, algorithms=['RS256'])
+            except jwt.InvalidTokenError:
+                current_app.logger.error("Auth token couldn't be decoded for public key: {}"
                                      .format(pub_key))
-            decoded_token = None
+                decoded_token = None
 
         if decoded_token:
             break
