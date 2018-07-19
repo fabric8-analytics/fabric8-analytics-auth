@@ -2,7 +2,7 @@
 
 import unittest
 import pytest
-from fabric8a_auth import HTTPError
+from fabric8a_auth.errors import HTTPError
 
 
 def test_http_error_attributes():

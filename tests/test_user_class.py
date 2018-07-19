@@ -1,7 +1,7 @@
 """Unit tests for the authorization module."""
 
 import unittest
-from fabric8a_auth import User
+from fabric8a_auth.fabric8a_auth import User
 
 
 def test_user_class():

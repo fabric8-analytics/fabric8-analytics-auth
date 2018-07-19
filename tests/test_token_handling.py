@@ -1,12 +1,12 @@
 """Unit tests for token handling functions."""
 
-import unittest
-import pytest
 from unittest.mock import *
+
 import jwt
+import pytest
 from jwt.contrib.algorithms.pycrypto import RSAAlgorithm
 
-from fabric8a_auth import *
+from fabric8a_auth.fabric8a_auth import decode_user_token
 
 
 def setup_module(module):
