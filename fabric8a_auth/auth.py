@@ -4,53 +4,61 @@ from functools import wraps
 
 import jwt
 import requests
-from flask import current_app, request
-from jwt.contrib.algorithms.pycrypto import RSAAlgorithm
+from flask import app, current_app, request
 
 from fabric8a_auth.errors import HTTPError
 
-#jwt.register_algorithm('RS256', RSAAlgorithm(RSAAlgorithm.SHA256))
 
-
-def get_audiences():
-    """Retrieve all JWT audiences."""
-    return current_app.config.get('FABRIC8_ANALYTICS_JWT_AUDIENCE').split(',')
-
-
-def decode_token(token):
+def decode_token(app, token, audiences=None, ):
     """Decode JWT tokens from auth service"""
+    if token is None:
+        return token
+
     if token.startswith('Bearer '):
         _, token = token.split(' ', 1)
 
-    pub_keys = fetch_public_keys(current_app)
-
+    pub_keys = fetch_public_keys(app)
     for pub_key in pub_keys:
-        try:
-            pub_key = pub_key.get("key", "")
-            decoded_token = jwt.decode(token, pub_key, algorithms=['RS256'])
-        except jwt.InvalidTokenError:
-            current_app.logger.error("Auth token couldn't be decoded for public key: {}"
-                                     .format(pub_key))
-            decoded_token = None
+        public_key = pub_key.get("key", "")
+
+        if audiences is None:
+            # Service account does not have audiences
+            try:
+                decoded_token = jwt.decode(token, public_key, algorithms=['RS256'])
+            except jwt.InvalidTokenError:
+                app.logger.error("Service account token couldn't be decoded, token is invalid")
+                decoded_token = None
+            except jwt.InvalidSignatureError:
+                app.logger.error("Service account token couldn't be decoded, signature is invalid")
+                decoded_token = None
+        else:
+            # For User account check if the audience is valid
+            for audience in audiences:
+                try:
+                    decoded_token = jwt.decode(token, public_key, algorithms=['RS256'], audience=audience)
+                except jwt.exceptions.InvalidAudienceError:
+                    app.logger.error("User auth token couldn't be decoded, audience is invalid")
+                    decoded_token = None
+                except jwt.InvalidTokenError:
+                    app.logger.error("User auth token couldn't be decoded, token is invalid")
+                    decoded_token = None
+                except jwt.InvalidSignatureError:
+                    app.logger.error("User auth token couldn't be decoded, signature is invalid")
+                    decoded_token = None
 
         if decoded_token:
             break
 
-    if not decoded_token:
-        raise jwt.InvalidTokenError('Auth token cannot be verified.')
-
     return decoded_token
 
 
-def decode_user_token(token):
+def decode_user_token(app, token):
     """Decode the authorization token read from the request header."""
-    if token is None:
-        return {}
-
-    decoded_token = decode_token(token)
+    audiences = get_audiences()
+    decoded_token = decode_token(app, token, audiences)
 
     if decoded_token is None:
-        raise jwt.InvalidTokenError('Auth token audience cannot be verified.')
+        raise jwt.InvalidTokenError('Auth token cannot be verified.')
     if "email_verified" not in decoded_token:
         raise jwt.InvalidIssuerError('Can not retrieve the email_verified property from the token')
     if decoded_token["email_verified"] in ('0', 'False', 'false'):
@@ -59,12 +67,10 @@ def decode_user_token(token):
     return decoded_token
 
 
-def decode_service_token(token):
+def decode_service_token(app, token):
     """Decode OSIO service token."""
-    if token is None:
-        return {}
 
-    decoded_token = decode_token(token)
+    decoded_token = decode_token(app, token)
 
     return decoded_token
 
@@ -144,7 +150,7 @@ def service_token_required(view):
     return wrapper
 
 
-def fetch_public_keys(app):
+def fetch_public_keys(app):  # pragma: no cover
     """Get public keys for OSIO service account. Currently, there are three public keys."""
     if not getattr(app, "service_public_keys", []):
         auth_url = os.os.getenv('FABRIC8_AUTH_URL', '')
@@ -161,7 +167,6 @@ def fetch_public_keys(app):
                 return ''
 
             keys = result.json().get('keys', [])
-
             for i, key in keys:
                 keys[i] = \
                     '-----BEGIN PUBLIC KEY-----\n{pkey}\n' \
@@ -174,8 +179,32 @@ def fetch_public_keys(app):
     return app.public_keys
 
 
-class User:
-    """Class that represents User entity."""
+def init_service_account_token(app):
+    """Initialize a service token from auth service."""
+    auth_url = os.getenv('FABRIC8_AUTH_URL', '')
+    endpoint = '{url}/api/token'.format(url=auth_url)
 
-    def __init__(self, email):
-        self.email = email
+    client_id = os.getenv('SERVICE_ACCOUNT_CLIENT_ID', 'id')
+    client_secret = os.getenv('SERVICE_ACCOUNT_CLIENT_SECRET', 'secret')
+
+    payload = {"grant_type": "client_credentials",
+               "client_id": client_id.strip(),
+               "client_secret": client_secret.strip()}
+    try:
+        resp = requests.post(endpoint, json=payload)
+    except requests.exceptions.RequestException as e:
+        app.logger.error('Fetching Service Account token from %s, status %d, result: %s',
+                         auth_url, resp.status_code, resp.text)
+        raise e
+
+    if resp.status_code == 200:
+        data = resp.json()
+        try:
+            access_token = data['access_token']
+        except IndexError:
+            app.logger.error('JSON data does not contain access token %s', data)
+            raise requests.exceptions.RequestException
+        return access_token
+    else:
+        app.logger.error('Failed. Response code from auth service was: %s', resp.status_code)
+        raise requests.exceptions.RequestException
