@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -e
+
 # test coverage threshold
 COVERAGE_THRESHOLD=50
 
