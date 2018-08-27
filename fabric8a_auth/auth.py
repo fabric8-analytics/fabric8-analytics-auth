@@ -35,7 +35,9 @@ def decode_token(app, token, audiences=None, ):
             # For User account check if the audience is valid
             for audience in audiences:
                 try:
-                    decoded_token = jwt.decode(token, public_key, algorithms=['RS256'], audience=audience)
+                    decoded_token = jwt.decode(token, public_key,
+                                               algorithms=['RS256'],
+                                               audience=audience)
                 except jwt.exceptions.InvalidAudienceError:
                     app.logger.error("User auth token couldn't be decoded, audience is invalid")
                     decoded_token = None
