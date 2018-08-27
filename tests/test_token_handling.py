@@ -10,7 +10,7 @@ from fabric8a_auth.auth import decode_user_token, decode_service_token, init_ser
 
 
 def create_app():
-    """Return flask app instance"""
+    """Return flask app instance."""
     app = Flask(__name__)
     ctx = app.app_context()
     ctx.push()
@@ -87,6 +87,7 @@ def mocked_get_audiences_3():
 
 
 def mocked_requests_post_1(endpoint, json):
+    """Moc http request."""
     class MockResponse:
         def __init__(self, json_data, status_code):
             self.json_data = json_data
@@ -102,6 +103,7 @@ def mocked_requests_post_1(endpoint, json):
 
 
 def get_current_app():
+    """Get flask app instance."""
     return APP
 
 

@@ -1,4 +1,4 @@
-"""Auhentication helpers"""
+"""Auhentication helpers."""
 import os
 from functools import wraps
 
@@ -10,7 +10,7 @@ from fabric8a_auth.errors import HTTPError
 
 
 def decode_token(app, token, audiences=None, ):
-    """Decode JWT tokens from auth service"""
+    """Decode JWT tokens from auth service."""
     if token is None:
         return token
 
@@ -71,7 +71,6 @@ def decode_user_token(app, token):
 
 def decode_service_token(app, token):
     """Decode OSIO service token."""
-
     decoded_token = decode_token(app, token)
 
     return decoded_token
@@ -89,7 +88,6 @@ def get_audiences():
 
 def login_required(view):
     """Check if the login is required and if the user can be authorized."""
-
     # NOTE: the actual authentication 401 failures are commented out for now and will be
     # uncommented as soon as we know everything works fine; right now this is purely for
     # being able to tail logs and see if stuff is going fine
@@ -123,7 +121,6 @@ def login_required(view):
 
 def service_token_required(view):
     """Check if the request contains a valid service token."""
-
     @wraps(view)
     def wrapper(*args, **kwargs):
         # Disable authentication for local setup
