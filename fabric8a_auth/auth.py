@@ -1,21 +1,23 @@
-"""Auhentication helpers."""
+"""Authentication helpers."""
 import os
 from functools import wraps
 
 import jwt
 import requests
-from flask import app, current_app, request
+from flask import current_app, request, g
 
-from fabric8a_auth.errors import HTTPError
+from fabric8a_auth.errors import AuthError
 
 
-def decode_token(app, token, audiences=None, ):
+def decode_token(app, token, audiences=None):
     """Decode JWT tokens from auth service."""
     if token is None:
         return token
 
     if token.startswith('Bearer '):
         _, token = token.split(' ', 1)
+
+    decoded_token = None
 
     pub_keys = fetch_public_keys(app)
     for pub_key in pub_keys:
@@ -48,9 +50,10 @@ def decode_token(app, token, audiences=None, ):
                     app.logger.error("User auth token couldn't be decoded, signature is invalid")
                     decoded_token = None
 
-        if decoded_token:
-            break
+            if decoded_token:
+                break
 
+    g.decoded_token = decoded_token or {}
     return decoded_token
 
 
@@ -83,36 +86,32 @@ def get_token_from_auth_header():
 
 def get_audiences():
     """Retrieve all JWT audiences."""
-    return os.getenv('FABRIC8_ANALYTICS_JWT_AUDIENCE').split(',')
+    return os.environ.get('FABRIC8_ANALYTICS_JWT_AUDIENCE', '').split(',')
 
 
 def login_required(view):
     """Check if the login is required and if the user can be authorized."""
-    # NOTE: the actual authentication 401 failures are commented out for now and will be
-    # uncommented as soon as we know everything works fine; right now this is purely for
-    # being able to tail logs and see if stuff is going fine
     @wraps(view)
     def wrapper(*args, **kwargs):
-        # Disable authentication for local setup
-        if os.getenv('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+        if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
             return view(*args, **kwargs)
 
         lgr = current_app.logger
 
         try:
-            decoded = decode_user_token(get_token_from_auth_header())
+            decoded = decode_user_token(current_app, get_token_from_auth_header())
             if not decoded:
                 lgr.exception('Provide an Authorization token with the API request')
-                raise HTTPError(401, 'Authentication failed - token missing')
+                raise AuthError(401, 'Authentication failed - token missing')
 
-            lgr.info('Successfuly authenticated user {e} using JWT'.
+            lgr.info('Successfully authenticated user {e} using JWT'.
                      format(e=decoded.get('email')))
         except jwt.ExpiredSignatureError as exc:
             lgr.exception('Expired JWT token')
-            raise HTTPError(401, 'Authentication failed - token has expired') from exc
+            raise AuthError(401, 'Authentication failed - token has expired') from exc
         except Exception as exc:
             lgr.exception('Failed decoding JWT token')
-            raise HTTPError(401, 'Authentication failed - could not decode JWT token') from exc
+            raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
 
         return view(*args, **kwargs)
 
@@ -123,8 +122,7 @@ def service_token_required(view):
     """Check if the request contains a valid service token."""
     @wraps(view)
     def wrapper(*args, **kwargs):
-        # Disable authentication for local setup
-        if os.getenv('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+        if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
             return view(*args, **kwargs)
 
         lgr = current_app.logger
@@ -133,58 +131,59 @@ def service_token_required(view):
             decoded = decode_service_token(get_token_from_auth_header())
             if not decoded:
                 lgr.exception('Provide an Authorization token with the API request')
-                raise HTTPError(401, 'Authentication failed - token missing')
+                raise AuthError(401, 'Authentication failed - token missing')
 
-            lgr.info('Successfuly authenticated user {e} using JWT'.
+            lgr.info('Successfully authenticated user {e} using JWT'.
                      format(e=decoded.get('email')))
         except jwt.ExpiredSignatureError as exc:
             lgr.exception('Expired JWT token')
-            raise HTTPError(401, 'Authentication failed - token has expired') from exc
+            raise AuthError(401, 'Authentication failed - token has expired') from exc
         except Exception as exc:
             lgr.exception('Failed decoding JWT token')
-            raise HTTPError(401, 'Authentication failed - could not decode JWT token') from exc
+            raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
 
         return view(*args, **kwargs)
 
     return wrapper
 
 
-def fetch_public_keys(app):  # pragma: no cover
+def fetch_public_keys(app):
     """Get public keys for OSIO service account. Currently, there are three public keys."""
-    if not getattr(app, "service_public_keys", []):
-        auth_url = os.os.getenv('FABRIC8_AUTH_URL', '')
+    if not getattr(app, "public_keys", []):
+        auth_url = os.environ.get('OSIO_AUTH_URL')
         if auth_url:
             try:
                 auth_url = auth_url.strip('/') + '/api/token/keys?format=pem'
-                result = requests.get(auth_url, timeout=0.5)
+                result = requests.get(auth_url, timeout=2)
                 app.logger.info('Fetching public key from %s, status %d, result: %s',
                                 auth_url, result.status_code, result.text)
             except requests.exceptions.Timeout:
                 app.logger.error('Timeout fetching public key from %s', auth_url)
-                return ''
+                return []
             if result.status_code != 200:
-                return ''
+                return []
 
             keys = result.json().get('keys', [])
-            for i, key in keys:
-                keys[i] = \
+            for key_dict in keys:
+                key = key_dict.get('key', '')
+                key_dict['key'] = \
                     '-----BEGIN PUBLIC KEY-----\n{pkey}\n' \
                     '-----END PUBLIC KEY-----'.format(pkey=key)
 
             app.public_keys = keys
         else:
-            app.public_keys = None
+            app.public_keys = []
 
     return app.public_keys
 
 
 def init_service_account_token(app):
     """Initialize a service token from auth service."""
-    auth_url = os.getenv('FABRIC8_AUTH_URL', '')
+    auth_url = os.environ.get('FABRIC8_AUTH_URL', '')
     endpoint = '{url}/api/token'.format(url=auth_url)
 
-    client_id = os.getenv('SERVICE_ACCOUNT_CLIENT_ID', 'id')
-    client_secret = os.getenv('SERVICE_ACCOUNT_CLIENT_SECRET', 'secret')
+    client_id = os.environ.get('SERVICE_ACCOUNT_CLIENT_ID', 'id')
+    client_secret = os.environ.get('SERVICE_ACCOUNT_CLIENT_SECRET', 'secret')
 
     payload = {"grant_type": "client_credentials",
                "client_id": client_id.strip(),
@@ -192,8 +191,8 @@ def init_service_account_token(app):
     try:
         resp = requests.post(endpoint, json=payload)
     except requests.exceptions.RequestException as e:
-        app.logger.error('Fetching Service Account token from %s, status %d, result: %s',
-                         auth_url, resp.status_code, resp.text)
+        app.logger.error('Fetching Service Account token from %s, result: %s',
+                         auth_url, str(e))
         raise e
 
     if resp.status_code == 200:
