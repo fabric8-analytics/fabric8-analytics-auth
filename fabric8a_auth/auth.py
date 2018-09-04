@@ -63,7 +63,7 @@ def decode_user_token(app, token):
     decoded_token = decode_token(app, token, audiences)
 
     if decoded_token is None:
-        raise jwt.InvalidTokenError('Auth token cannot be verified.')
+        raise AuthError(401, 'Authentication failed - token missing or malformed')
     if "email_verified" not in decoded_token:
         raise jwt.InvalidIssuerError('Can not retrieve the email_verified property from the token')
     if decoded_token["email_verified"] in ('0', 'False', 'false'):
