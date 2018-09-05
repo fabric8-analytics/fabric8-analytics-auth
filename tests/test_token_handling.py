@@ -1,12 +1,14 @@
 """Unit tests for token handling functions."""
-
+import os
 from unittest.mock import *
 
 import jwt
 import pytest
 from flask import Flask
 
-from fabric8a_auth.auth import decode_user_token, decode_service_token, init_service_account_token
+from fabric8a_auth.auth import decode_user_token, decode_service_token, \
+                               init_service_account_token, fetch_public_keys
+from fabric8a_auth.errors import AuthError
 
 
 def create_app():
@@ -53,12 +55,12 @@ def teardown_module(module):
 
 def mocked_fetch_public_keys_1(app):
     """Mock for the function fetch_public_key()."""
-    return None
+    return [{}]
 
 
 def mocked_fetch_public_keys_2(app):
     """Mock for the function fetch_public_key()."""
-    return "nothing"
+    return [{"nothing": "nothing"}]
 
 
 def mocked_fetch_public_keys_3(app):
@@ -86,18 +88,22 @@ def mocked_get_audiences_3():
     return ["fabric8-online-platform", "openshiftio-public"]
 
 
-def mocked_requests_post_1(endpoint, json):
+def mocked_requests(endpoint, json={}, timeout=2):
     """Moc http request."""
     class MockResponse:
         def __init__(self, json_data, status_code):
             self.json_data = json_data
             self.status_code = status_code
+            self.text = "Testing text"
 
         def json(self):
             return self.json_data
 
         def status_code(self):
             return self.status_code
+
+        def text(self):
+            return self.text
 
     return MockResponse({"access_token": "value1"}, 200)
 
@@ -113,7 +119,7 @@ def get_current_app():
        side_effect=mocked_fetch_public_keys_1, create=True)
 def test_decode_token_invalid_input_1(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
-    with pytest.raises(jwt.exceptions.InvalidTokenError):
+    with pytest.raises(AuthError):
         assert decode_user_token(APP, None) == {}
 
 
@@ -123,7 +129,7 @@ def test_decode_token_invalid_input_1(mocked_fetch_public_key, mocked_get_audien
        side_effect=mocked_fetch_public_keys_1, create=True)
 def test_decode_token_invalid_input_2(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
-    with pytest.raises(Exception):
+    with pytest.raises(AuthError):
         assert decode_user_token(APP, "Foobar") is None
 
 
@@ -167,7 +173,7 @@ def test_decode_token_invalid_input_6(mocked_fetch_public_key, mocked_get_audien
         'some': 'payload',
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
-    with pytest.raises(jwt.InvalidTokenError):
+    with pytest.raises(AuthError):
         assert decode_user_token(APP, token) is not None
 
 
@@ -182,7 +188,7 @@ def test_decode_token_invalid_input_7(mocked_fetch_public_key, mocked_get_audien
         'email_verified': '0'
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
-    with pytest.raises(jwt.InvalidTokenError):
+    with pytest.raises(AuthError):
         assert decode_user_token(APP, token) is not None
 
 
@@ -212,7 +218,7 @@ def test_decode_token_invalid_key_input(mocked_fetch_public_key, mocked_get_audi
         'email_verified': '1'
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
-    with pytest.raises(jwt.InvalidTokenError):
+    with pytest.raises(AuthError):
         assert decode_user_token(APP, token) is not None
 
 
@@ -229,10 +235,18 @@ def test_service_token_valid_input(mocked_fetch_public_key):
 
 
 @patch("requests.post",
-       side_effect=mocked_requests_post_1, create=True)
-def test_init_service_account_token(mocked_requests_post_1):
-    """Test the handling JWT tokens."""
+       side_effect=mocked_requests, create=True)
+def test_init_service_account_token(mocked_requests):
+    """Test the handling of service account JWT tokens."""
     assert init_service_account_token(create_app()) is not None
+
+
+@patch("requests.get",
+       side_effect=mocked_requests, create=True)
+@patch.dict(os.environ, {"OSIO_AUTH_URL": "http://auth.openshift.io"})
+def test_fetch_public_keys(mocked_requests):
+    """Test fetching of public keys."""
+    assert fetch_public_keys(APP) is not None
 
 
 if __name__ == '__main__':
