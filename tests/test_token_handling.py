@@ -1,4 +1,5 @@
 """Unit tests for token handling functions."""
+import json
 import os
 from unittest.mock import *
 
@@ -88,7 +89,26 @@ def mocked_get_audiences_3():
     return ["fabric8-online-platform", "openshiftio-public"]
 
 
-def mocked_requests(endpoint, json={}, timeout=2):
+def mocked_requests_get(endpoint, timeout=2):
+    """Moc http request."""
+    class MockResponse:
+        def __init__(self, status_code):
+            self.status_code = 200
+            self.text = "Testing text"
+
+        def status_code(self):
+            return self.status_code
+
+        def text(self):
+            return self.text
+
+        def json(self):
+            return json.loads('{"keys" : [{"key": "value1","keyid": "thekey_id"}]}')
+
+    return MockResponse([{"key": "value1","keyid": "thekey_id"}])
+
+
+def mocked_requests(endpoint, json, timeout=2):
     """Moc http request."""
     class MockResponse:
         def __init__(self, json_data, status_code):
@@ -242,9 +262,9 @@ def test_init_service_account_token(mocked_requests):
 
 
 @patch("requests.get",
-       side_effect=mocked_requests, create=True)
+       side_effect=mocked_requests_get, create=True)
 @patch.dict(os.environ, {"OSIO_AUTH_URL": "http://auth.openshift.io"})
-def test_fetch_public_keys(mocked_requests):
+def test_fetch_public_keys(mocked_requests_get):
     """Test fetching of public keys."""
     assert fetch_public_keys(APP) is not None
 
