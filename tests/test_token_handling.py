@@ -308,6 +308,24 @@ def test_user_wrapper(mocked_fetch_public_key, mocked_get_audiences,
 @patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences_3, create=True)
 @patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_4, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header, create=True)
+def test_user_wrapper_wrong_key(mocked_fetch_public_key, mocked_get_audiences,
+                                mocked_get_token_from_auth_header):
+    """Test login required wrapper for user."""
+    @login_required
+    def testing_method():
+        return True
+
+    with pytest.raises(AuthError):
+        result = testing_method()
+        assert result is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_3, create=True)
 @patch("fabric8a_auth.auth.get_token_from_auth_header",
        side_effect=mocked_get_token_from_auth_header_service_account, create=True)
@@ -320,6 +338,24 @@ def test_service_account_wrapper(mocked_fetch_public_key, mocked_get_audiences,
 
     result = testing_method()
     assert result is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_4, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header_service_account, create=True)
+def test_service_account_wrapper_wrong_key(mocked_fetch_public_key, mocked_get_audiences,
+                                           mocked_get_token_from_auth_header_service_account):
+    """Test login required wrapper for service account."""
+    @service_token_required
+    def testing_method():
+        return True
+
+    with pytest.raises(AuthError):
+        result = testing_method()
+        assert result is not None
 
 
 if __name__ == '__main__':
