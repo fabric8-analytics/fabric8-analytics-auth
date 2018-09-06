@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(
-    name='fabric8-analyticsa-authentication',
+    name='fabric8a_auth',
     version='0.0.1',
     description='a pip-installable package example',
     license='Apache License 2.0',

@@ -1,18 +1,40 @@
 """Unit tests for token handling functions."""
-
+import json
+import os
 from unittest.mock import *
 
 import jwt
 import pytest
-from jwt.contrib.algorithms.pycrypto import RSAAlgorithm
+from flask import Flask
 
-from fabric8a_auth.fabric8a_auth import decode_user_token
+from fabric8a_auth.auth import decode_user_token, decode_service_token, \
+    init_service_account_token, fetch_public_keys, service_token_required, login_required
+from fabric8a_auth.errors import AuthError
+
+
+def create_app():
+    """Return flask app instance."""
+    app = Flask(__name__)
+    ctx = app.app_context()
+    ctx.push()
+
+    return app
 
 
 def setup_module(module):
     """Perform setup of any state specific to the execution of the given module."""
+    global APP
     global PRIVATE_KEY
     global PUBLIC_KEY
+    global WRONG_PUBLIC_KEY
+    global FABRIC8_AUTH_URL
+    global SERVICE_ACCOUNT_CLIENT_ID
+    global SERVICE_ACCOUNT_CLIENT_SECRET
+
+    FABRIC8_AUTH_URL = "http://someurl.com/api/token"
+
+    SERVICE_ACCOUNT_CLIENT_ID = "client_test_id"
+    SERVICE_ACCOUNT_CLIENT_SECRET = "client test secret"
 
     # private and public key used in tests
     with open("private_key.pem") as fin:
@@ -21,16 +43,10 @@ def setup_module(module):
     with open("public_key.pem") as fin:
         PUBLIC_KEY = fin.read()
 
-    # just to make sure the following statement does not raise an exception
-    try:
-        jwt.unregister_algorithm('RS256')
-    except KeyError:
-        pass
+    with open("wrong_public_key.pem") as fin:
+        WRONG_PUBLIC_KEY = fin.read()
 
-    # make sure the RS256 algorithm is initialized
-    jwt.register_algorithm('RS256', RSAAlgorithm(RSAAlgorithm.SHA256))
-
-    #with app.app_context():
+    APP = create_app()
 
 
 def teardown_module(module):
@@ -40,17 +56,22 @@ def teardown_module(module):
 
 def mocked_fetch_public_keys_1(app):
     """Mock for the function fetch_public_key()."""
-    return None
+    return [{}]
 
 
 def mocked_fetch_public_keys_2(app):
     """Mock for the function fetch_public_key()."""
-    return "nothing"
+    return [{"nothing": "nothing"}]
 
 
 def mocked_fetch_public_keys_3(app):
     """Mock for the function fetch_public_key()."""
-    return [{"keyid": 666,"key":PUBLIC_KEY}]
+    return [{"keyid": 666, "key": PUBLIC_KEY}]
+
+
+def mocked_fetch_public_keys_4(app):
+    """Mock for the function fetch_public_key()."""
+    return [{"keyid": 667, "key": WRONG_PUBLIC_KEY}]
 
 
 def mocked_get_audiences():
@@ -65,61 +86,125 @@ def mocked_get_audiences_2():
 
 def mocked_get_audiences_3():
     """Mock for the function get_audiences()."""
-    return ["foo:bar", ]
+    return ["fabric8-online-platform", "openshiftio-public"]
 
 
-@patch("fabric8a_auth.get_audiences",
+def mocked_requests_get(endpoint, timeout=2):
+    """Moc http request."""
+    class MockResponse:
+        def __init__(self, status_code):
+            self.status_code = 200
+            self.text = "Testing text"
+
+        def status_code(self):
+            return self.status_code
+
+        def text(self):
+            return self.text
+
+        def json(self):
+            return json.loads('{"keys" : [{"key": "value1","keyid": "thekey_id"}]}')
+
+    return MockResponse([{"key": "value1", "keyid": "thekey_id"}])
+
+
+def mocked_requests(endpoint, json, timeout=2):
+    """Moc http request."""
+    class MockResponse:
+        def __init__(self, json_data, status_code):
+            self.json_data = json_data
+            self.status_code = status_code
+            self.text = "Testing text"
+
+        def json(self):
+            return self.json_data
+
+        def status_code(self):
+            return self.status_code
+
+        def text(self):
+            return self.text
+
+    return MockResponse({"access_token": "value1"}, 200)
+
+
+def get_current_app():
+    """Get flask app instance."""
+    return APP
+
+
+def mocked_get_token_from_auth_header():
+    """Mock that returns token."""
+    payload = {
+        'some': 'payload',
+        'email_verified': '1',
+        'aud': 'openshiftio-public'
+    }
+    return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
+
+
+def mocked_get_token_from_auth_header_service_account():
+    """Mock that returns token."""
+    payload = {
+        'some': 'payload',
+        'email_verified': '1'
+    }
+    return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
+
+
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences, create=True)
-@patch("fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_1, create=True)
 def test_decode_token_invalid_input_1(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
-    assert decode_user_token(None) == {}
+    with pytest.raises(AuthError):
+        assert decode_user_token(APP, None) == {}
 
 
-@patch("fabric8a_auth.get_audiences",
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences, create=True)
-@patch("fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_1, create=True)
 def test_decode_token_invalid_input_2(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
-    with pytest.raises(Exception):
-        assert decode_user_token("Foobar") is None
+    with pytest.raises(AuthError):
+        assert decode_user_token(APP, "Foobar") is None
 
 
-@patch("fabric8a_auth.get_audiences",
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences, create=True)
-@patch("fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_1, create=True)
 def test_decode_token_invalid_input_3(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
     with pytest.raises(Exception):
-        assert decode_user_token("Bearer ") is None
+        assert decode_user_token(APP, "Bearer ") is None
 
 
-@patch("fabric8a_auth.get_audiences",
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences, create=True)
-@patch("fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_2, create=True)
 def test_decode_token_invalid_input_4(mocked_fetch_public_key, mocked_get_audiences):
     """Test the invalid input handling during token decoding."""
     with pytest.raises(Exception):
-        assert decode_user_token("Bearer ") is None
+        assert decode_user_token(APP, "Bearer ") is None
 
 
-@patch("fabric8a_auth.get_audiences",
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences_2, create=True)
-@patch("fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_2, create=True)
 def test_decode_token_invalid_input_5(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
     with pytest.raises(Exception):
-        assert decode_user_token("Bearer something") is None
+        assert decode_user_token(APP, "Bearer something") is None
 
 
-@patch("fabric8a_auth.fabric8a_auth.get_audiences",
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences_3, create=True)
-@patch("fabric8a_auth.fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_3, create=True)
 def test_decode_token_invalid_input_6(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
@@ -127,13 +212,13 @@ def test_decode_token_invalid_input_6(mocked_fetch_public_key, mocked_get_audien
         'some': 'payload',
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
-    with pytest.raises(jwt.InvalidIssuerError):
-        assert decode_user_token(token) is not None
+    with pytest.raises(AuthError):
+        assert decode_user_token(APP, token) is not None
 
 
-@patch("fabric8a_auth.fabric8a_auth.get_audiences",
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences_3, create=True)
-@patch("fabric8a_auth.fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_3, create=True)
 def test_decode_token_invalid_input_7(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
@@ -142,22 +227,135 @@ def test_decode_token_invalid_input_7(mocked_fetch_public_key, mocked_get_audien
         'email_verified': '0'
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
-    with pytest.raises(jwt.InvalidIssuerError):
-        assert decode_user_token(token) is not None
+    with pytest.raises(AuthError):
+        assert decode_user_token(APP, token) is not None
 
 
-@patch("fabric8a_auth.fabric8a_auth.get_audiences",
+@patch("fabric8a_auth.auth.get_audiences",
        side_effect=mocked_get_audiences_3, create=True)
-@patch("fabric8a_auth.fabric8a_auth.fetch_public_keys",
+@patch("fabric8a_auth.auth.fetch_public_keys",
        side_effect=mocked_fetch_public_keys_3, create=True)
 def test_decode_token_valid_input(mocked_fetch_public_key, mocked_get_audiences):
     """Test the handling wrong JWT tokens."""
     payload = {
         'some': 'payload',
+        'email_verified': '1',
+        'aud': 'openshiftio-public'
+    }
+    token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
+    assert decode_user_token(APP, token) is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_4, create=True)
+def test_decode_token_invalid_key_input(mocked_fetch_public_key, mocked_get_audiences):
+    """Test the handling wrong public key tokens."""
+    payload = {
+        'some': 'payload',
         'email_verified': '1'
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
-    assert decode_user_token(token) is not None
+    with pytest.raises(AuthError):
+        assert decode_user_token(APP, token) is not None
+
+
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_3, create=True)
+def test_service_token_valid_input(mocked_fetch_public_key):
+    """Test the handling JWT tokens."""
+    payload = {
+        'some': 'payload',
+        'email_verified': '1'
+    }
+    token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
+    assert decode_service_token(APP, token) is not None
+
+
+@patch("requests.post",
+       side_effect=mocked_requests, create=True)
+def test_init_service_account_token(mocked_requests):
+    """Test the handling of service account JWT tokens."""
+    assert init_service_account_token(create_app()) is not None
+
+
+@patch("requests.get",
+       side_effect=mocked_requests_get, create=True)
+@patch.dict(os.environ, {"OSIO_AUTH_URL": "http://auth.openshift.io"})
+def test_fetch_public_keys(mocked_requests_get):
+    """Test fetching of public keys."""
+    assert fetch_public_keys(APP) is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_3, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header, create=True)
+def test_user_wrapper(mocked_fetch_public_key, mocked_get_audiences,
+                      mocked_get_token_from_auth_header):
+    """Test login required wrapper for user."""
+    @login_required
+    def testing_method():
+        return True
+
+    result = testing_method()
+    assert result is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_4, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header, create=True)
+def test_user_wrapper_wrong_key(mocked_fetch_public_key, mocked_get_audiences,
+                                mocked_get_token_from_auth_header):
+    """Test login required wrapper for user."""
+    @login_required
+    def testing_method():
+        return True
+
+    with pytest.raises(AuthError):
+        result = testing_method()
+        assert result is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_3, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header_service_account, create=True)
+def test_service_account_wrapper(mocked_fetch_public_key, mocked_get_audiences,
+                                 mocked_get_token_from_auth_header_service_account):
+    """Test login required wrapper for service account."""
+    @service_token_required
+    def testing_method():
+        return True
+
+    result = testing_method()
+    assert result is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_4, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header_service_account, create=True)
+def test_service_account_wrapper_wrong_key(mocked_fetch_public_key, mocked_get_audiences,
+                                           mocked_get_token_from_auth_header_service_account):
+    """Test login required wrapper for service account."""
+    @service_token_required
+    def testing_method():
+        return True
+
+    with pytest.raises(AuthError):
+        result = testing_method()
+        assert result is not None
 
 
 if __name__ == '__main__':

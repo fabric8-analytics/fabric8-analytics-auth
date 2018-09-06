@@ -1,5 +1,0 @@
-flask
-pycrypto
-flask-security
-pyjwt
-requests-futures
