@@ -8,7 +8,7 @@ import pytest
 from flask import Flask
 
 from fabric8a_auth.auth import decode_user_token, decode_service_token, \
-                               init_service_account_token, fetch_public_keys
+    init_service_account_token, fetch_public_keys, service_token_required, login_required
 from fabric8a_auth.errors import AuthError
 
 
@@ -105,7 +105,7 @@ def mocked_requests_get(endpoint, timeout=2):
         def json(self):
             return json.loads('{"keys" : [{"key": "value1","keyid": "thekey_id"}]}')
 
-    return MockResponse([{"key": "value1","keyid": "thekey_id"}])
+    return MockResponse([{"key": "value1", "keyid": "thekey_id"}])
 
 
 def mocked_requests(endpoint, json, timeout=2):
@@ -131,6 +131,25 @@ def mocked_requests(endpoint, json, timeout=2):
 def get_current_app():
     """Get flask app instance."""
     return APP
+
+
+def mocked_get_token_from_auth_header():
+    """Mock that returns token."""
+    payload = {
+        'some': 'payload',
+        'email_verified': '1',
+        'aud': 'openshiftio-public'
+    }
+    return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
+
+
+def mocked_get_token_from_auth_header_service_account():
+    """Mock that returns token."""
+    payload = {
+        'some': 'payload',
+        'email_verified': '1'
+    }
+    return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
 
 
 @patch("fabric8a_auth.auth.get_audiences",
@@ -267,6 +286,40 @@ def test_init_service_account_token(mocked_requests):
 def test_fetch_public_keys(mocked_requests_get):
     """Test fetching of public keys."""
     assert fetch_public_keys(APP) is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_3, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header, create=True)
+def test_user_wrapper(mocked_fetch_public_key, mocked_get_audiences,
+                      mocked_get_token_from_auth_header):
+    """Test login required wrapper for user."""
+    @login_required
+    def testing_method():
+        return True
+
+    result = testing_method()
+    assert result is not None
+
+
+@patch("fabric8a_auth.auth.get_audiences",
+       side_effect=mocked_get_audiences_3, create=True)
+@patch("fabric8a_auth.auth.fetch_public_keys",
+       side_effect=mocked_fetch_public_keys_3, create=True)
+@patch("fabric8a_auth.auth.get_token_from_auth_header",
+       side_effect=mocked_get_token_from_auth_header_service_account, create=True)
+def test_service_account_wrapper(mocked_fetch_public_key, mocked_get_audiences,
+                                 mocked_get_token_from_auth_header_service_account):
+    """Test login required wrapper for service account."""
+    @service_token_required
+    def testing_method():
+        return True
+
+    result = testing_method()
+    assert result is not None
 
 
 if __name__ == '__main__':

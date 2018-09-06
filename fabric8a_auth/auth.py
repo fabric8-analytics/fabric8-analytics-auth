@@ -93,7 +93,7 @@ def login_required(view):
     """Check if the login is required and if the user can be authorized."""
     @wraps(view)
     def wrapper(*args, **kwargs):
-        if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+        if is_authentication_disabled():
             return view(*args, **kwargs)
 
         lgr = current_app.logger
@@ -122,13 +122,13 @@ def service_token_required(view):
     """Check if the request contains a valid service token."""
     @wraps(view)
     def wrapper(*args, **kwargs):
-        if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+        if is_authentication_disabled():
             return view(*args, **kwargs)
 
         lgr = current_app.logger
 
         try:
-            decoded = decode_service_token(get_token_from_auth_header())
+            decoded = decode_service_token(current_app, get_token_from_auth_header())
             if not decoded:
                 lgr.exception('Provide an Authorization token with the API request')
                 raise AuthError(401, 'Authentication failed - token missing')
@@ -206,3 +206,11 @@ def init_service_account_token(app):
     else:
         app.logger.error('Failed. Response code from auth service was: %s', resp.status_code)
         raise requests.exceptions.RequestException
+
+
+def is_authentication_disabled():
+    """Check if authentication is enabled."""
+    if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+        return True
+    else:
+        return False
