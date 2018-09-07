@@ -92,7 +92,7 @@ def mocked_get_audiences_3():
 
 
 def mocked_requests_get(endpoint):
-    """Moc HTTP request."""
+    """Mock HTTP request."""
     class MockResponse:
         def __init__(self, status_code):
             self.status_code = 200
@@ -112,7 +112,7 @@ def mocked_requests_get(endpoint):
 
 
 def mocked_requests(endpoint, json):
-    """Moc HTTP request."""
+    """Mock HTTP request."""
     class MockResponse:
         def __init__(self, json_data, status_code):
             self.json_data = json_data
