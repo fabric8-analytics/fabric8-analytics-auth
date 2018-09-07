@@ -1,7 +1,7 @@
 """Unit tests for token handling functions."""
 import json
 import os
-from unittest.mock import *
+from unittest.mock import patch
 
 import jwt
 import pytest
