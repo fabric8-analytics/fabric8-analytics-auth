@@ -91,7 +91,7 @@ def mocked_get_audiences_3():
     return ["fabric8-online-platform", "openshiftio-public"]
 
 
-def mocked_requests_get(endpoint):
+def mocked_requests_get(endpoint, timeout=2):
     """Mock HTTP request."""
     class MockResponse:
         def __init__(self, status_code):
@@ -108,10 +108,11 @@ def mocked_requests_get(endpoint):
             return json.loads('{"keys" : [{"key": "value1","keyid": "thekey_id"}]}')
 
     assert endpoint is not None
+    assert timeout >= 0
     return MockResponse([{"key": "value1", "keyid": "thekey_id"}])
 
 
-def mocked_requests(endpoint, json):
+def mocked_requests(endpoint, json, timeout=2):
     """Mock HTTP request."""
     class MockResponse:
         def __init__(self, json_data, status_code):
@@ -129,6 +130,7 @@ def mocked_requests(endpoint, json):
             return self.text
 
     assert endpoint is not None
+    assert timeout >= 0
     return MockResponse({"access_token": "value1"}, 200)
 
 
