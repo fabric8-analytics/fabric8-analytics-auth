@@ -13,7 +13,7 @@ def test_http_error_attributes():
 
 def test_http_error_raise():
     """Test the basic behaviour of AuthError class."""
-    with pytest.raises(fabric8a_auth.errors.AuthError) as e:
+    with pytest.raises(fabric8a_auth.errors.AuthError):
         raise fabric8a_auth.errors.AuthError(404, "Not found")
 
 
