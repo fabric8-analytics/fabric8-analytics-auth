@@ -3,6 +3,15 @@
 # fabric8-analytics-auth
 Authentication utilities for f8a flask applications
 
+## Configuration
+There are 2 environment variables configurable for the library.
+
+FABRIC8_ANALYTICS_JWT_AUDIENCE
+
+OSIO_AUTH_URL
+
+First, contain comma-separated audiences and second has auth. service URL.
+
 ### Footnotes
 
 #### Coding standards
