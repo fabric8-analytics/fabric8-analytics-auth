@@ -179,7 +179,7 @@ def fetch_public_keys(app):
 
 def init_service_account_token(app):
     """Initialize a service token from auth service."""
-    auth_url = os.environ.get('FABRIC8_AUTH_URL', '')
+    auth_url = os.environ.get('OSIO_AUTH_URL', '')
     endpoint = '{url}/api/token'.format(url=auth_url)
 
     client_id = os.environ.get('SERVICE_ACCOUNT_CLIENT_ID', 'id')
