@@ -65,7 +65,7 @@ def decode_user_token(app, token):
     if decoded_token is None:
         raise AuthError(401, 'Authentication failed - token missing or malformed')
     if "email_verified" not in decoded_token:
-        raise AuthError(401,'Can not retrieve the email_verified property from the token')
+        raise AuthError(401, 'Can not retrieve the email_verified property from the token')
     if decoded_token["email_verified"] in ('0', 'False', 'false'):
         raise AuthError(401, 'Email of the user has not been validated')
 
