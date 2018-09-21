@@ -35,23 +35,22 @@ def decode_token(app, token, audiences=None):
                 decoded_token = None
         else:
             # For User account check if the audience is valid
-            for audience in audiences:
-                try:
-                    decoded_token = jwt.decode(token, public_key,
-                                               algorithms=['RS256'],
-                                               audience=audience)
-                except jwt.exceptions.InvalidAudienceError:
-                    app.logger.error("User auth token couldn't be decoded, audience is invalid")
-                    decoded_token = None
-                except jwt.InvalidTokenError:
-                    app.logger.error("User auth token couldn't be decoded, token is invalid")
-                    decoded_token = None
-                except jwt.InvalidSignatureError:
-                    app.logger.error("User auth token couldn't be decoded, signature is invalid")
-                    decoded_token = None
+            try:
+                decoded_token = jwt.decode(token, public_key,
+                                           algorithms=['RS256'],
+                                           audience=audiences)
+            except jwt.exceptions.InvalidAudienceError:
+                app.logger.error("User auth token couldn't be decoded, audience is invalid")
+                decoded_token = None
+            except jwt.InvalidTokenError:
+                app.logger.error("User auth token couldn't be decoded, token is invalid")
+                decoded_token = None
+            except jwt.InvalidSignatureError:
+                app.logger.error("User auth token couldn't be decoded, signature is invalid")
+                decoded_token = None
 
-                if decoded_token:
-                    break
+        if decoded_token:
+            break
 
     g.decoded_token = decoded_token or {}
     return decoded_token
@@ -91,6 +90,7 @@ def get_audiences():
 
 def login_required(view):
     """Check if the login is required and if the user can be authorized."""
+
     @wraps(view)
     def wrapper(*args, **kwargs):
         if is_authentication_disabled():
@@ -120,6 +120,7 @@ def login_required(view):
 
 def service_token_required(view):
     """Check if the request contains a valid service token."""
+
     @wraps(view)
     def wrapper(*args, **kwargs):
         if is_authentication_disabled():
