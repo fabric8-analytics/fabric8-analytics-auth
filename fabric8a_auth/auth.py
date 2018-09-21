@@ -50,8 +50,8 @@ def decode_token(app, token, audiences=None):
                     app.logger.error("User auth token couldn't be decoded, signature is invalid")
                     decoded_token = None
 
-            if decoded_token:
-                break
+                if decoded_token:
+                    break
 
     g.decoded_token = decoded_token or {}
     return decoded_token
