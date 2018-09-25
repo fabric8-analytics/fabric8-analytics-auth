@@ -90,7 +90,6 @@ def get_audiences():
 
 def login_required(view):
     """Check if the login is required and if the user can be authorized."""
-
     @wraps(view)
     def wrapper(*args, **kwargs):
         if is_authentication_disabled():
@@ -120,7 +119,6 @@ def login_required(view):
 
 def service_token_required(view):
     """Check if the request contains a valid service token."""
-
     @wraps(view)
     def wrapper(*args, **kwargs):
         if is_authentication_disabled():
