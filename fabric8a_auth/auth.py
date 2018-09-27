@@ -7,6 +7,12 @@ import requests
 from flask import current_app, request, g
 
 from fabric8a_auth.errors import AuthError
+from f8a_worker import AuthorizedThreeScaleAccounts
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.exc import SQLAlchemyError
+from .utils import Postgres
+
+session = Postgres().session
 
 
 def decode_token(app, token, audiences=None):
@@ -83,9 +89,35 @@ def get_token_from_auth_header():
     return request.headers.get('Authorization')
 
 
+def get_threescale_account_tokens():
+    """Get the 3scale account name and secret from request headers."""
+    return request.headers.get('x-3scale-account-name'),\
+           request.headers.get('x-3scale-account-secret')
+
+
 def get_audiences():
     """Retrieve all JWT audiences."""
     return os.environ.get('FABRIC8_ANALYTICS_JWT_AUDIENCE', '').split(',')
+
+
+def decode_threescale_auth(app, threescale_account_name):
+    """Get 3Scale account tokens"""
+
+    app.logger.info('Authentication based on API management gateway settings')
+    try:
+        result = session.query(AuthorizedThreeScaleAccounts). \
+            filter(AuthorizedThreeScaleAccounts.account_name == threescale_account_name).\
+            first()
+    except (NoResultFound):
+        app.logger.info('No authentication parameters found to validate the incoming request')
+        return None
+    except SQLAlchemyError:
+        app.logger.info('System error while validating authentication parameters '
+                        'in the incoming request')
+        session.rollback()
+        return None
+
+    return result
 
 
 def login_required(view):
@@ -97,20 +129,35 @@ def login_required(view):
 
         lgr = current_app.logger
 
-        try:
-            decoded = decode_user_token(current_app, get_token_from_auth_header())
-            if not decoded:
-                lgr.exception('Provide an Authorization token with the API request')
-                raise AuthError(401, 'Authentication failed - token missing')
+        threescale_account_name, threescale_account_secret = get_threescale_account_tokens()
+        if threescale_account_name is not None and threescale_account_secret is not None:
+            result = decode_threescale_auth(current_app, threescale_account_name)
+            if result is None:
+                lgr.exception('Error encountered while retrieving 3scale account information')
+                raise AuthError(401, 'Request authentication failed')
+            else:
+                account_info = result.to_dict()
+                if account_info.get('account_secret') != threescale_account_secret:
+                    lgr.exception('Received a request from an unauthorized source')
+                    raise AuthError(401, 'Received a request from an unauthorized source')
+                else:
+                    lgr.info('Authenticated the request from {name}'.
+                             format(name=threescale_account_name))
+        else:
+            try:
+                decoded = decode_user_token(current_app, get_token_from_auth_header())
+                if not decoded:
+                    lgr.exception('Provide an Authorization token with the API request')
+                    raise AuthError(401, 'Authentication failed - token missing')
 
-            lgr.info('Successfully authenticated user {e} using JWT'.
-                     format(e=decoded.get('email')))
-        except jwt.ExpiredSignatureError as exc:
-            lgr.exception('Expired JWT token')
-            raise AuthError(401, 'Authentication failed - token has expired') from exc
-        except Exception as exc:
-            lgr.exception('Failed decoding JWT token')
-            raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
+                lgr.info('Successfully authenticated user {e} using JWT'.
+                         format(e=decoded.get('email')))
+            except jwt.ExpiredSignatureError as exc:
+                lgr.exception('Expired JWT token')
+                raise AuthError(401, 'Authentication failed - token has expired') from exc
+            except Exception as exc:
+                lgr.exception('Failed decoding JWT token')
+                raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
 
         return view(*args, **kwargs)
 
