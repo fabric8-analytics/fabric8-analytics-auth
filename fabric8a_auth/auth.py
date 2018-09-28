@@ -7,7 +7,7 @@ import requests
 from flask import current_app, request, g
 
 from fabric8a_auth.errors import AuthError
-from f8a_worker import AuthorizedThreeScaleAccounts
+from f8a_worker.models import AuthorizedThreeScaleAccounts
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.exc import SQLAlchemyError
 from .utils import Postgres
