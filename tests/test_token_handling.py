@@ -150,7 +150,7 @@ def mocked_get_token_from_auth_header():
 
 
 def mocked_get_threescale_account_secret_header():
-    """Mock that returns the secret"""
+    """Mock that returns the secret."""
     return "secret"
 
 
