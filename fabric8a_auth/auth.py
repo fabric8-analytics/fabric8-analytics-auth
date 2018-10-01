@@ -7,13 +7,6 @@ import requests
 from flask import current_app, request, g
 
 from fabric8a_auth.errors import AuthError
-from f8a_worker.models import AuthorizedThreeScaleAccounts
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from sqlalchemy.exc import SQLAlchemyError
-from .utils import Postgres
-
-session = Postgres().session
-
 
 def decode_token(app, token, audiences=None):
     """Decode JWT tokens from auth service."""
@@ -89,35 +82,9 @@ def get_token_from_auth_header():
     return request.headers.get('Authorization')
 
 
-def get_threescale_account_tokens():
-    """Get the 3scale account name and secret from request headers."""
-    return request.headers.get('x-3scale-account-name'),\
-           request.headers.get('x-3scale-account-secret')
-
-
 def get_audiences():
     """Retrieve all JWT audiences."""
     return os.environ.get('FABRIC8_ANALYTICS_JWT_AUDIENCE', '').split(',')
-
-
-def decode_threescale_auth(app, threescale_account_name):
-    """Get 3Scale account tokens"""
-
-    app.logger.info('Authentication based on API management gateway settings')
-    try:
-        result = session.query(AuthorizedThreeScaleAccounts). \
-            filter(AuthorizedThreeScaleAccounts.account_name == threescale_account_name).\
-            first()
-    except (NoResultFound):
-        app.logger.info('No authentication parameters found to validate the incoming request')
-        return None
-    except SQLAlchemyError:
-        app.logger.info('System error while validating authentication parameters '
-                        'in the incoming request')
-        session.rollback()
-        return None
-
-    return result
 
 
 def login_required(view):
@@ -129,20 +96,12 @@ def login_required(view):
 
         lgr = current_app.logger
 
-        threescale_account_name, threescale_account_secret = get_threescale_account_tokens()
-        if threescale_account_name is not None and threescale_account_secret is not None:
-            result = decode_threescale_auth(current_app, threescale_account_name)
-            if result is None:
-                lgr.exception('Error encountered while retrieving 3scale account information')
-                raise AuthError(401, 'Request authentication failed')
+        threescale_account_secret = request.headers.get('x-3scale-account-secret')
+        if threescale_account_secret is not None:
+            if os.getenv('THREESCALE_ACCOUNT_SECRET') == threescale_account_secret:
+                lgr.info('Request has been successfully authenticated')
             else:
-                account_info = result.to_dict()
-                if account_info.get('account_secret') != threescale_account_secret:
-                    lgr.exception('Received a request from an unauthorized source')
-                    raise AuthError(401, 'Received a request from an unauthorized source')
-                else:
-                    lgr.info('Authenticated the request from {name}'.
-                             format(name=threescale_account_name))
+                raise AuthError(401, 'Authentication failed - invalid token received')
         else:
             try:
                 decoded = decode_user_token(current_app, get_token_from_auth_header())
