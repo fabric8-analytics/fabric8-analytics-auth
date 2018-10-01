@@ -8,6 +8,7 @@ from flask import current_app, request, g
 
 from fabric8a_auth.errors import AuthError
 
+
 def decode_token(app, token, audiences=None):
     """Decode JWT tokens from auth service."""
     if token is None:
