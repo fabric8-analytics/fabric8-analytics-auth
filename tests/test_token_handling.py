@@ -149,6 +149,11 @@ def mocked_get_token_from_auth_header():
     return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
 
 
+def mocked_get_threescale_account_secret_header():
+    """Mock that returns the secret"""
+    return "secret"
+
+
 def mocked_get_token_from_auth_header_service_account():
     """Mock that returns token."""
     payload = {
@@ -300,8 +305,12 @@ def test_fetch_public_keys(mocked_requests_get):
        side_effect=mocked_fetch_public_keys_3, create=True)
 @patch("fabric8a_auth.auth.get_token_from_auth_header",
        side_effect=mocked_get_token_from_auth_header, create=True)
+@patch.dict(os.environ, {"THREESCALE_ACCOUNT_SECRET": "secret"})
+@patch("fabric8a_auth.auth.get_threescale_account_secret_header",
+       side_effect=mocked_get_threescale_account_secret_header, create=True)
 def test_user_wrapper(_mocked_fetch_public_key, _mocked_get_audiences,
-                      _mocked_get_token_from_auth_header):
+                      _mocked_get_token_from_auth_header,
+                      _mocked_get_threescale_account_secret_header):
     """Test login required wrapper for user."""
     @login_required
     def testing_method():
@@ -317,8 +326,12 @@ def test_user_wrapper(_mocked_fetch_public_key, _mocked_get_audiences,
        side_effect=mocked_fetch_public_keys_4, create=True)
 @patch("fabric8a_auth.auth.get_token_from_auth_header",
        side_effect=mocked_get_token_from_auth_header, create=True)
+@patch.dict(os.environ, {"THREESCALE_ACCOUNT_SECRET": "secret1"})
+@patch("fabric8a_auth.auth.get_threescale_account_secret_header",
+       side_effect=mocked_get_threescale_account_secret_header, create=True)
 def test_user_wrapper_wrong_key(_mocked_fetch_public_key, _mocked_get_audiences,
-                                _mocked_get_token_from_auth_header):
+                                _mocked_get_token_from_auth_header,
+                                _mocked_get_threescale_account_secret_header):
     """Test login required wrapper for user."""
     @login_required
     def testing_method():

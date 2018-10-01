@@ -82,6 +82,11 @@ def get_token_from_auth_header():
     return request.headers.get('Authorization')
 
 
+def get_threescale_account_secret_header():
+    """Get the 3scale account secret read from the request header."""
+    return request.headers.get('x-3scale-account-secret')
+
+
 def get_audiences():
     """Retrieve all JWT audiences."""
     return os.environ.get('FABRIC8_ANALYTICS_JWT_AUDIENCE', '').split(',')
@@ -96,7 +101,7 @@ def login_required(view):
 
         lgr = current_app.logger
 
-        threescale_account_secret = request.headers.get('x-3scale-account-secret')
+        threescale_account_secret = get_threescale_account_secret_header()
         if threescale_account_secret is not None:
             if os.getenv('THREESCALE_ACCOUNT_SECRET') == threescale_account_secret:
                 lgr.info('Request has been successfully authenticated')
