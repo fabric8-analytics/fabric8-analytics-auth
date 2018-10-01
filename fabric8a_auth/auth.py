@@ -129,35 +129,35 @@ def login_required(view):
 
         lgr = current_app.logger
 
-        # threescale_account_name, threescale_account_secret = get_threescale_account_tokens()
-        # if threescale_account_name is not None and threescale_account_secret is not None:
-        #     result = decode_threescale_auth(current_app, threescale_account_name)
-        #     if result is None:
-        #         lgr.exception('Error encountered while retrieving 3scale account information')
-        #         raise AuthError(401, 'Request authentication failed')
-        #     else:
-        #         account_info = result.to_dict()
-        #         if account_info.get('account_secret') != threescale_account_secret:
-        #             lgr.exception('Received a request from an unauthorized source')
-        #             raise AuthError(401, 'Received a request from an unauthorized source')
-        #         else:
-        #             lgr.info('Authenticated the request from {name}'.
-        #                      format(name=threescale_account_name))
-        # else:
-        try:
-            decoded = decode_user_token(current_app, get_token_from_auth_header())
-            if not decoded:
-                lgr.exception('Provide an Authorization token with the API request')
-                raise AuthError(401, 'Authentication failed - token missing')
+        threescale_account_name, threescale_account_secret = get_threescale_account_tokens()
+        if threescale_account_name is not None and threescale_account_secret is not None:
+            result = decode_threescale_auth(current_app, threescale_account_name)
+            if result is None:
+                lgr.exception('Error encountered while retrieving 3scale account information')
+                raise AuthError(401, 'Request authentication failed')
+            else:
+                account_info = result.to_dict()
+                if account_info.get('account_secret') != threescale_account_secret:
+                    lgr.exception('Received a request from an unauthorized source')
+                    raise AuthError(401, 'Received a request from an unauthorized source')
+                else:
+                    lgr.info('Authenticated the request from {name}'.
+                             format(name=threescale_account_name))
+        else:
+            try:
+                decoded = decode_user_token(current_app, get_token_from_auth_header())
+                if not decoded:
+                    lgr.exception('Provide an Authorization token with the API request')
+                    raise AuthError(401, 'Authentication failed - token missing')
 
-            lgr.info('Successfully authenticated user {e} using JWT'.
-                     format(e=decoded.get('email')))
-        except jwt.ExpiredSignatureError as exc:
-            lgr.exception('Expired JWT token')
-            raise AuthError(401, 'Authentication failed - token has expired') from exc
-        except Exception as exc:
-            lgr.exception('Failed decoding JWT token')
-            raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
+                lgr.info('Successfully authenticated user {e} using JWT'.
+                         format(e=decoded.get('email')))
+            except jwt.ExpiredSignatureError as exc:
+                lgr.exception('Expired JWT token')
+                raise AuthError(401, 'Authentication failed - token has expired') from exc
+            except Exception as exc:
+                lgr.exception('Failed decoding JWT token')
+                raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
 
         return view(*args, **kwargs)
 
