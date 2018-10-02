@@ -149,7 +149,7 @@ def mocked_get_token_from_auth_header():
     return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
 
 
-def mocked_ret_threescale_account_secret_header_none():
+def mocked_get_threescale_account_secret_header_none():
     """Mock that returns the 3scale secret as None."""
     return None
 
@@ -339,10 +339,10 @@ def test_login_required_invalid_secret(_mocked_get_threescale_account_secret_hea
        side_effect=mocked_get_token_from_auth_header, create=True)
 @patch.dict(os.environ, {"THREESCALE_ACCOUNT_SECRET": ""})
 @patch("fabric8a_auth.auth.get_threescale_account_secret_header",
-       side_effect=mocked_ret_threescale_account_secret_header_none, create=True)
+       side_effect=mocked_get_threescale_account_secret_header_none, create=True)
 def test_user_wrapper(_mocked_fetch_public_key, _mocked_get_audiences,
                       _mocked_get_token_from_auth_header,
-                      _mocked_ret_threescale_account_secret_header_none):
+                      _mocked_get_threescale_account_secret_header_none):
     """Test login required wrapper for user."""
     @login_required
     def testing_method():
@@ -360,10 +360,10 @@ def test_user_wrapper(_mocked_fetch_public_key, _mocked_get_audiences,
        side_effect=mocked_get_token_from_auth_header, create=True)
 @patch.dict(os.environ, {"THREESCALE_ACCOUNT_SECRET": ""})
 @patch("fabric8a_auth.auth.get_threescale_account_secret_header",
-       side_effect=mocked_ret_threescale_account_secret_header_none, create=True)
+       side_effect=mocked_get_threescale_account_secret_header_none, create=True)
 def test_user_wrapper_wrong_key(_mocked_fetch_public_key, _mocked_get_audiences,
                                 _mocked_get_token_from_auth_header,
-                                _mocked_ret_threescale_account_secret_header_none):
+                                _mocked_get_threescale_account_secret_header_none):
     """Test login required wrapper for user."""
     @login_required
     def testing_method():
