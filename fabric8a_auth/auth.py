@@ -83,6 +83,11 @@ def get_token_from_auth_header():
     return request.headers.get('Authorization')
 
 
+def get_threescale_account_secret_header():
+    """Get the 3scale account secret read from the request header."""
+    return request.headers.get('x-3scale-account-secret')
+
+
 def get_audiences():
     """Retrieve all JWT audiences."""
     return os.environ.get('FABRIC8_ANALYTICS_JWT_AUDIENCE', '').split(',')
@@ -97,20 +102,27 @@ def login_required(view):
 
         lgr = current_app.logger
 
-        try:
-            decoded = decode_user_token(current_app, get_token_from_auth_header())
-            if not decoded:
-                lgr.exception('Provide an Authorization token with the API request')
-                raise AuthError(401, 'Authentication failed - token missing')
+        threescale_account_secret = get_threescale_account_secret_header()
+        if threescale_account_secret is not None:
+            if os.getenv('THREESCALE_ACCOUNT_SECRET') == threescale_account_secret:
+                lgr.info('Request has been successfully authenticated')
+            else:
+                raise AuthError(401, 'Authentication failed - invalid token received')
+        else:
+            try:
+                decoded = decode_user_token(current_app, get_token_from_auth_header())
+                if not decoded:
+                    lgr.exception('Provide an Authorization token with the API request')
+                    raise AuthError(401, 'Authentication failed - token missing')
 
-            lgr.info('Successfully authenticated user {e} using JWT'.
-                     format(e=decoded.get('email')))
-        except jwt.ExpiredSignatureError as exc:
-            lgr.exception('Expired JWT token')
-            raise AuthError(401, 'Authentication failed - token has expired') from exc
-        except Exception as exc:
-            lgr.exception('Failed decoding JWT token')
-            raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
+                lgr.info('Successfully authenticated user {e} using JWT'.
+                         format(e=decoded.get('email')))
+            except jwt.ExpiredSignatureError as exc:
+                lgr.exception('Expired JWT token')
+                raise AuthError(401, 'Authentication failed - token has expired') from exc
+            except Exception as exc:
+                lgr.exception('Failed decoding JWT token')
+                raise AuthError(401, 'Authentication failed - could not decode JWT token') from exc
 
         return view(*args, **kwargs)
 
