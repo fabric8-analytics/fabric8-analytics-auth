@@ -88,6 +88,7 @@ def get_audiences():
 
 def login_required(view):
     """Check if the login is required and if the user can be authorized."""
+
     @wraps(view)
     def wrapper(*args, **kwargs):
         if is_authentication_disabled():
@@ -100,26 +101,26 @@ def login_required(view):
             if os.getenv('THREESCALE_ACCOUNT_SECRET') == threescale_account_secret:
                 lgr.info('Request has been successfully authenticated')
             else:
-                raise AuthError(401, 'Authentication failed - invalid token received')
+                return AuthError(401, 'Authentication failed - invalid token received')
         else:
             try:
                 decoded = decode_user_token(current_app, get_token_from_auth_header())
                 if not decoded:
                     lgr.error('Provide an Authorization token with the API request')
-                    raise AuthError(401, 'Authentication failed - token missing')
+                    return AuthError(401, 'Authentication failed - token missing')
                 elif "email_verified" not in decoded:
-                    raise AuthError(401, 'Can not retrieve the '
-                                         'email_verified property from the token')
+                    return AuthError(401, 'Can not retrieve the '
+                                          'email_verified property from the token')
                 elif decoded["email_verified"] in ('0', 'False', 'false'):
-                    raise AuthError(401, 'Email of the user has not been validated')
+                    return AuthError(401, 'Email of the user has not been validated')
                 lgr.info('Successfully authenticated user {e} using JWT'.
                          format(e=decoded.get('email')))
             except jwt.ExpiredSignatureError:
                 lgr.error('Expired JWT token')
-                raise AuthError(401, 'Authentication failed - token has expired')
+                return AuthError(401, 'Authentication failed - token has expired')
             except Exception as exc:
                 lgr.error('Failed with exception')
-                raise exc
+                return exc
 
         return view(*args, **kwargs)
 
@@ -128,6 +129,7 @@ def login_required(view):
 
 def service_token_required(view):
     """Check if the request contains a valid service token."""
+
     @wraps(view)
     def wrapper(*args, **kwargs):
         if is_authentication_disabled():
@@ -139,16 +141,16 @@ def service_token_required(view):
             decoded = decode_service_token(current_app, get_token_from_auth_header())
             if not decoded:
                 lgr.error('Provide an Authorization token with the API request')
-                raise AuthError(401, 'Authentication failed - token missing')
+                return AuthError(401, 'Authentication failed - token missing')
 
             lgr.info('Successfully authenticated user {e} using JWT'.
                      format(e=decoded.get('email')))
         except jwt.ExpiredSignatureError:
             lgr.error('Expired JWT token')
-            raise AuthError(401, 'Authentication failed - token has expired')
-        except Exception:
-            lgr.error('Failed decoding JWT token')
-            raise AuthError(401, 'Authentication failed - could not decode JWT token')
+            return AuthError(401, 'Authentication failed - token has expired')
+        except Exception as ex:
+            lgr.error('Exception occured: {e}'.format(e=ex.msg))
+            return ex
 
         return view(*args, **kwargs)
 
