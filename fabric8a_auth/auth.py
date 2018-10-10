@@ -111,7 +111,7 @@ def login_required(view):
                 elif 'email_verified' in decoded:
                     # only check if email is verified if the `email_verified` exists
                     # TODO: revert once the token in Jenkins is updated
-                    if decoded['email_verified'] not in ('1', 'True', 'true'):
+                    if str(decoded['email_verified']) not in ('1', 'True', 'true'):
                         raise AuthError(401, 'Email of the user has not been validated')
                 lgr.info('Successfully authenticated user {e} using JWT'.
                          format(e=decoded.get('email')))
