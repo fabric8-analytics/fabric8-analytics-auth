@@ -142,9 +142,11 @@ def get_current_app():
 def mocked_get_token_from_auth_header():
     """Mock that returns token."""
     payload = {
+        'username': 'pllm',
         'some': 'payload',
         'email_verified': '1',
-        'aud': 'openshiftio-public'
+        'aud': 'openshiftio-public',
+        'sub': 'pllm'
     }
     return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")
 
