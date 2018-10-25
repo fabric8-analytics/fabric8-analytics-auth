@@ -113,10 +113,6 @@ def login_required(view):
                     # TODO: revert once the token in Jenkins is updated
                     if str(decoded['email_verified']) not in ('1', 'True', 'true'):
                         raise AuthError(401, 'Email of the user has not been validated')
-                elif 'sub' not in decoded:
-                    raise AuthError(401, 'Authentication failed sub is not present in the token')
-                elif 'username' not in decoded:
-                    raise AuthError(401, 'Authentication failed username is not present in the token')
                 lgr.info('Successfully authenticated user {e} using JWT'.
                          format(e=decoded.get('email')))
             except jwt.ExpiredSignatureError:
