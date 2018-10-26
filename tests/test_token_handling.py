@@ -142,7 +142,7 @@ def get_current_app():
 def mocked_get_token_from_auth_header():
     """Mock that returns token."""
     payload = {
-        'username': 'pllm',
+        'preferred_username': 'pllm',
         'some': 'payload',
         'email_verified': '1',
         'aud': 'openshiftio-public',
@@ -164,7 +164,7 @@ def mocked_get_threescale_account_secret_header():
 def mocked_get_token_from_auth_header_service_account():
     """Mock that returns token."""
     payload = {
-        'username': 'pllm',
+        'preferred_username': 'pllm',
         'sub': 'pllm',
         'some': 'payload',
         'email_verified': '1'
@@ -254,7 +254,7 @@ def test_decode_token_valid_input(_mocked_fetch_public_key, _mocked_get_audience
         'some': 'payload',
         'email_verified': '1',
         'aud': 'openshiftio-public',
-        'username': 'pllm',
+        'preferred_username': 'pllm',
         'sub': 'pllm',
     }
     token = jwt.encode(payload, PRIVATE_KEY, algorithm='RS256').decode("utf-8")

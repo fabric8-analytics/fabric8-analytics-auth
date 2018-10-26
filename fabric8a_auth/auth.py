@@ -111,7 +111,7 @@ def login_required(view):
                 elif 'sub' not in decoded:
                     raise AuthError(401, 'Authentication failed sub '
                                          'is not present in the token')
-                elif 'username' not in decoded:
+                elif 'preferred_username' not in decoded:
                     raise AuthError(401, 'Authentication failed username '
                                          'is not present in the token')
                 lgr.info('Successfully authenticated user {e} using JWT'.
@@ -120,7 +120,7 @@ def login_required(view):
                 lgr.error('Expired JWT token')
                 raise AuthError(401, 'Authentication failed - token has expired')
             except Exception as exc:
-                lgr.error('Failed with exception')
+                lgr.error('Failed with exception: {e}'.format(e=exc))
                 raise exc
 
         return view(*args, **kwargs)
