@@ -49,6 +49,7 @@ def decode_token(app, token, audiences=None):
                 app.logger.error("User auth token couldn't be decoded, signature is invalid")
                 decoded_token = None
 
+        # we've found the first decoded token, let's use it
         if decoded_token:
             break
 
@@ -205,6 +206,7 @@ def init_service_account_token(app):
                          auth_url, str(e))
         raise e
 
+    # check the HTTP status code returned by the service
     if resp.status_code == 200:
         data = resp.json()
         try:
@@ -220,6 +222,7 @@ def init_service_account_token(app):
 
 def is_authentication_disabled():
     """Check if authentication is enabled."""
+    # authentication can be disabled via environment variables
     if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
         return True
     else:

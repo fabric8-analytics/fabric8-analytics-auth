@@ -56,4 +56,5 @@ cd tests || exit
 PYTHONDONTWRITEBYTECODE=1 python3 "$(which pytest)" --cov=../fabric8a_auth/ --cov-report term-missing --cov-fail-under=$COVERAGE_THRESHOLD -vv -s .
 printf "%stests passed%s\n\n" "${GREEN}" "${NORMAL}"
 
+cp -r ../.git ./
 `which codecov` --token=31551081-2274-47b5-91fd-7078feb91fc7
