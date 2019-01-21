@@ -36,9 +36,9 @@ def test_auth_error_repr_method():
 def test_auth_error_str_method():
     """Test the basic behaviour of AuthError class: the __str__ method."""
     e = fabric8a_auth.errors.AuthError(200, "Ok")
-    assert e.__str__() == "AuthError(200): Ok)"
+    assert e.__str__() == "AuthError(200): Ok"
     e = fabric8a_auth.errors.AuthError(404, "Not found")
-    assert e.__str__() == "AuthError(404): Not found)"
+    assert e.__str__() == "AuthError(404): Not found"
 
 
 if __name__ == '__main__':
