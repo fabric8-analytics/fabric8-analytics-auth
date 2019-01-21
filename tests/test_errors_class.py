@@ -4,20 +4,20 @@ import pytest
 import fabric8a_auth.errors
 
 
-def test_http_error_attributes():
+def test_auth_error_attributes():
     """Test the basic behaviour of AuthError class."""
     e = fabric8a_auth.errors.AuthError(404, "Not found")
     assert e.status_code == 404
     assert e.error == "Not found"
 
 
-def test_http_error_raise():
+def test_auth_error_raise():
     """Test the basic behaviour of AuthError class."""
     with pytest.raises(fabric8a_auth.errors.AuthError):
         raise fabric8a_auth.errors.AuthError(404, "Not found")
 
 
-def test_http_error_exception_handling():
+def test_auth_error_exception_handling():
     """Test the basic behaviour of AuthError class."""
     try:
         raise fabric8a_auth.errors.AuthError(404, "Not found")
@@ -25,7 +25,7 @@ def test_http_error_exception_handling():
         print(e)
 
 
-def test_http_error_repr_method():
+def test_auth_error_repr_method():
     """Test the basic behaviour of AuthError class: the __repr__ method."""
     e = fabric8a_auth.errors.AuthError(200, "Ok")
     assert e.__repr__() == "AuthError(status_code=200,error=Ok)"
@@ -33,7 +33,7 @@ def test_http_error_repr_method():
     assert e.__repr__() == "AuthError(status_code=404,error=Not found)"
 
 
-def test_http_error_str_method():
+def test_auth_error_str_method():
     """Test the basic behaviour of AuthError class: the __str__ method."""
     e = fabric8a_auth.errors.AuthError(200, "Ok")
     assert e.__str__() == "AuthError(200): Ok)"
@@ -42,8 +42,8 @@ def test_http_error_str_method():
 
 
 if __name__ == '__main__':
-    test_http_error_attributes()
-    test_http_error_raise()
-    test_http_error_exception_handling()
-    test_http_error_repr_method()
-    test_http_error_str_method()
+    test_auth_error_attributes()
+    test_auth_error_raise()
+    test_auth_error_exception_handling()
+    test_auth_error_repr_method()
+    test_auth_error_str_method()
