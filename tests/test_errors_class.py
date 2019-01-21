@@ -25,7 +25,25 @@ def test_http_error_exception_handling():
         print(e)
 
 
+def test_http_error_repr_method():
+    """Test the basic behaviour of AuthError class: the __repr__ method."""
+    e = fabric8a_auth.errors.AuthError(200, "Ok")
+    assert e.__repr__() == "AuthError(status_code=200,error=Ok)"
+    e = fabric8a_auth.errors.AuthError(404, "Not found")
+    assert e.__repr__() == "AuthError(status_code=404,error=Not found)"
+
+
+def test_http_error_str_method():
+    """Test the basic behaviour of AuthError class: the __str__ method."""
+    e = fabric8a_auth.errors.AuthError(200, "Ok")
+    assert e.__str__() == "AuthError(200): Ok)"
+    e = fabric8a_auth.errors.AuthError(404, "Not found")
+    assert e.__str__() == "AuthError(404): Not found)"
+
+
 if __name__ == '__main__':
     test_http_error_attributes()
     test_http_error_raise()
     test_http_error_exception_handling()
+    test_http_error_repr_method()
+    test_http_error_str_method()
