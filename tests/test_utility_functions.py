@@ -1,7 +1,6 @@
 """Unit tests for various utility functions."""
 
-import pytest
-from fabric8a_auth.auth import is_authentication_disabled
+from fabric8a_auth.auth import is_authentication_disabled, get_audiences
 import os
 
 
@@ -25,7 +24,6 @@ def test_is_authentication_disabled_negative_test():
 
 def test_is_authentication_disabled_positive_test():
     """Test the function is_authentication_disabled()."""
-
     os.environ['DISABLE_AUTHENTICATION'] = '1'
     assert is_authentication_disabled()
 
