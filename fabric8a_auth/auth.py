@@ -223,7 +223,7 @@ def init_service_account_token(app):
 def is_authentication_disabled():
     """Check if authentication is enabled."""
     # authentication can be disabled via environment variables
-    if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true'):
+    if os.environ.get('DISABLE_AUTHENTICATION') in ('1', 'True', 'true', 'TRUE'):
         return True
     else:
         return False
