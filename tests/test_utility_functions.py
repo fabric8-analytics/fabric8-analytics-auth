@@ -6,19 +6,19 @@ import os
 
 def test_is_authentication_disabled_negative_test():
     """Test the function is_authentication_disabled()."""
-    os.environ.set('DISABLE_AUTHENTICATION', '')
+    os.environ['DISABLE_AUTHENTICATION'] = ''
     assert not is_authentication_disabled()
 
-    os.environ.set('DISABLE_AUTHENTICATION', '0')
+    os.environ['DISABLE_AUTHENTICATION'] = '0'
     assert not is_authentication_disabled()
 
-    os.environ.set('DISABLE_AUTHENTICATION', 'false')
+    os.environ['DISABLE_AUTHENTICATION'] = 'false'
     assert not is_authentication_disabled()
 
-    os.environ.set('DISABLE_AUTHENTICATION', 'False')
+    os.environ['DISABLE_AUTHENTICATION'] = 'False'
     assert not is_authentication_disabled()
 
-    os.environ.set('DISABLE_AUTHENTICATION', 'FALSE')
+    os.environ['DISABLE_AUTHENTICATION'] = 'FALSE'
     assert not is_authentication_disabled()
 
 
@@ -40,10 +40,10 @@ def test_is_authentication_disabled_positive_test():
 def test_get_audiences():
     """Test the function get_audiences()."""
     os.environ.unsetenv('FABRIC8_ANALYTICS_JWT_AUDIENCE')
-    assert get_audiences() == []
+    assert get_audiences() == ['']
 
     os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = ''
-    assert get_audiences() == []
+    assert get_audiences() == ['']
 
     os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = 'a'
     assert get_audiences() == ['a']
@@ -52,7 +52,7 @@ def test_get_audiences():
     assert get_audiences() == ['a', 'b']
 
     os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = 'a,b,'
-    assert get_audiences() == ['a', 'b']
+    assert get_audiences() == ['a', 'b', '']
 
     os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = 'a,b,c'
     assert get_audiences() == ['a', 'b', 'c']
