@@ -1,7 +1,7 @@
 """Unit tests for various utility functions."""
 
 import pytest
-import fabric8a_auth.auth import is_authentication_disabled
+from fabric8a_auth.auth import is_authentication_disabled
 import os
 
 
@@ -37,6 +37,30 @@ def test_is_authentication_disabled_positive_test():
 
     os.environ['DISABLE_AUTHENTICATION'] = 'TRUE'
     assert is_authentication_disabled()
+
+
+def test_get_audiences():
+    """Test the function get_audiences()."""
+    os.environ.unsetenv('FABRIC8_ANALYTICS_JWT_AUDIENCE')
+    assert get_audiences() == []
+
+    os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = ''
+    assert get_audiences() == []
+
+    os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = 'a'
+    assert get_audiences() == ['a']
+
+    os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = 'a,b'
+    assert get_audiences() == ['a', 'b']
+
+    os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = 'a,b,'
+    assert get_audiences() == ['a', 'b']
+
+    os.environ['FABRIC8_ANALYTICS_JWT_AUDIENCE'] = 'a,b,c'
+    assert get_audiences() == ['a', 'b', 'c']
+
+
 if __name__ == '__main__':
     test_is_authentication_disabled_negative_test()
     test_is_authentication_disabled_positive_test()
+    test_get_audiences()
