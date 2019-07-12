@@ -10,6 +10,7 @@ class AuthError(Exception):
         @app.errorhandler(AuthError)
         def api_401_handler(err):
             return flask.jsonify(error=err.error), err.status_code
+
     """
 
     def __init__(self, status_code=401, error='authentication error'):
