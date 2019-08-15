@@ -3,6 +3,9 @@
 set -ex
 
 prep() {
+    # workaround for https://bugs.centos.org/view.php?id=16337 #
+    echo -e "exclude=mirror.ci.centos.org" >> /etc/yum/pluginconf.d/fastestmirror.conf
+
     yum -y update
     yum -y install epel-release
     yum -y install python36 python36-virtualenv which
@@ -14,4 +17,4 @@ check_python_version() {
 
 prep
 check_python_version
-./check-docstyle.sh
+./qa/check-docstyle.sh

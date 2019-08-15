@@ -1,5 +1,9 @@
 #! /bin/bash
 
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+pushd "${SCRIPT_DIR}/.." > /dev/null
+
 set -e
 set -x
 
@@ -67,3 +71,5 @@ printf "%stests passed%s\n\n" "${GREEN}" "${NORMAL}"
 
 cp -r ../.git ./
 `which codecov` --token=31551081-2274-47b5-91fd-7078feb91fc7
+
+popd > /dev/null
