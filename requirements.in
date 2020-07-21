@@ -1,0 +1,5 @@
+flask
+cryptography
+flask-security
+pyjwt
+requests
