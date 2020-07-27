@@ -14,7 +14,7 @@ class AuthError(Exception):
     """
 
     def __init__(self, status_code=401, error='authentication error'):
-        """Constructor.
+        """Auth error constructor.
 
         :param status_code:, int, HTTP status code
         :param error: str, error description

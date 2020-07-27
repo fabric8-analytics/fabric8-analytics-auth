@@ -4,8 +4,8 @@ from setuptools import setup
 
 
 def get_requirements():
-    """Parse all packages mentioned in the 'requirements.txt' file."""
-    with open('requirements.txt') as fd:
+    """Parse all packages mentioned in the 'requirements.in' file."""
+    with open('requirements.in') as fd:
         return fd.read().splitlines()
 
 
